@@ -1176,6 +1176,10 @@ function HtmlPageEditor({ page, engine, onClose }: { page: any; engine: { provid
       />
       <EngineNote engine={engine} />
       {bar && <div className="mb-4">{bar}</div>}
+      <div className="mb-5 space-y-5">
+        <SectionsPanel path={'/' + oldSlug} />
+        <PicturesPanel path={'/' + oldSlug} />
+      </div>
       <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
         <HtmlBox path={'/' + oldSlug} allowReset={false} onSaved={() => {}} />
         <Card title="Settings">
@@ -1216,7 +1220,11 @@ function HtmlPageEditor({ page, engine, onClose }: { page: any; engine: { provid
 }
 
 function BuiltPageEditor({ d, engine, onClose, reload }: { d: any; engine: { provider: string; problem: string } | null; onClose: () => void; reload: () => void }) {
-  const [tab, setTab] = useState<'texts' | 'settings' | 'html' | 'preview'>('texts');
+  const [tab, setTab] = useState<'sections' | 'texts' | 'pictures' | 'settings' | 'html' | 'preview'>('sections');
+  const [allPages, setAllPages] = useState<{ path: string; title: string }[]>([]);
+  useEffect(() => {
+    api(`${C}/pages`).then((r) => setAllPages([...r.built.map((x: any) => ({ path: x.path, title: x.title })), ...r.custom.filter((x: any) => x.mode === 'html').map((x: any) => ({ path: x.path, title: x.title }))])).catch(() => {});
+  }, []);
   const [meta, setMeta] = useState<{ hidden?: boolean; title?: string; description?: string }>(d.meta || {});
   const [q, setQ] = useState('');
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -1303,7 +1311,9 @@ function BuiltPageEditor({ d, engine, onClose, reload }: { d: any; engine: { pro
       <div className="mb-4 flex flex-wrap gap-2">
         {(
           [
+            ['sections', 'Sections'],
             ['texts', `Texts (${texts.length})`],
+            ['pictures', 'Pictures'],
             ['settings', 'Title & Google'],
             ['html', 'HTML (advanced)'],
             ['preview', 'Preview'],
@@ -1399,6 +1409,8 @@ function BuiltPageEditor({ d, engine, onClose, reload }: { d: any; engine: { pro
         </div>
       )}
       {tab === 'preview' && <LivePreview path={path} />}
+      {tab === 'sections' && <SectionsPanel path={path} pages={allPages} onChanged={reload} />}
+      {tab === 'pictures' && <PicturesPanel path={path} onChanged={reload} />}
       <AllLanguagesModal src={allOf} engine={engine} onClose={() => setAllOf(null)} onSaved={reload} />
     </div>
   );
@@ -1830,3 +1842,445 @@ export function TranslationsAdmin() {
   );
 }
 
+
+/* ================================================================ PAGE BUILDER: sections */
+type SectionRow = { i: number; title: string; kind: string; hidden: boolean; size: number };
+
+export function SectionsPanel({ path, onChanged, pages }: { path: string; onChanged?: () => void; pages?: { path: string; title: string }[] }) {
+  const [list, setList] = useState<SectionRow[] | null>(null);
+  const [busy, setBusy] = useState('');
+  const [edit, setEdit] = useState<{ i: number; html: string } | null>(null);
+  const [add, setAdd] = useState<number | null>(null);
+  const [tick, setTick] = useState(0);
+  const load = useCallback(() => api(`${C}/sections?path=${encodeURIComponent(path)}`).then((d) => setList(d.sections)), [path]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  async function op(i: number, o: string, extra: any = {}) {
+    setBusy(o + i);
+    try {
+      await api(`${C}/section`, 'POST', { path, i, op: o, ...extra });
+      await load();
+      setTick((x) => x + 1);
+      onChanged?.();
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy('');
+    }
+  }
+  if (!list) return <Spinner />;
+  const AddLine = ({ at }: { at: number }) => (
+    <div className="flex justify-center py-1">
+      <button type="button" onClick={() => setAdd(at)} className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold text-gray-400 ring-1 ring-dashed ring-gray-300 hover:bg-amber-50 hover:text-gray-700">
+        <Plus className="h-3 w-3" /> Add a section here
+      </button>
+    </div>
+  );
+  return (
+    <div className="grid gap-5 xl:grid-cols-[460px_1fr]">
+      <Card title={`Sections of this page (${list.length})`}>
+        <div className="p-3">
+          <p className="mb-2 px-1 text-xs text-gray-500">From top to bottom, between the header and the footer. Hide, move, copy, edit or delete any section, or add a new one. Every language follows.</p>
+          <AddLine at={-1} />
+          {list.map((s, k) => (
+            <div key={s.i}>
+              <div className={cn('flex items-center gap-2 rounded-xl px-3 py-2 ring-1', s.hidden ? 'bg-gray-50 ring-gray-200 opacity-70' : 'bg-white ring-gray-200')}>
+                <span className="w-6 shrink-0 text-center text-xs font-bold text-gray-400">{k + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{s.title}</p>
+                  <p className="truncate font-mono text-[10px] text-gray-400">
+                    {s.kind}
+                    {s.hidden ? ' · hidden' : ''}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center">
+                  <button type="button" title="Move up" disabled={k === 0 || !!busy} onClick={() => op(s.i, 'up')} className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30">
+                    ↑
+                  </button>
+                  <button type="button" title="Move down" disabled={k === list.length - 1 || !!busy} onClick={() => op(s.i, 'down')} className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-30">
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    title="Edit"
+                    onClick={async () => {
+                      const d = await api(`${C}/section?path=${encodeURIComponent(path)}&i=${s.i}`);
+                      setEdit({ i: s.i, html: d.html });
+                    }}
+                    className="rounded p-1 text-gray-500 hover:bg-gray-100"
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" title={s.hidden ? 'Show' : 'Hide'} onClick={() => op(s.i, s.hidden ? 'show' : 'hide')} className="rounded p-1 text-gray-500 hover:bg-gray-100">
+                    {s.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  </button>
+                  <button type="button" title="Copy" onClick={() => op(s.i, 'duplicate')} className="rounded p-1 text-gray-500 hover:bg-gray-100">
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete"
+                    onClick={async () => (await confirmDialog(`Delete the section "${s.title}" from this page? (Use Hide to keep it for later.)`)) && op(s.i, 'delete')}
+                    className="rounded p-1 text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <AddLine at={s.i} />
+            </div>
+          ))}
+        </div>
+      </Card>
+      <LivePreview path={path} key={tick} />
+      <Modal
+        open={!!edit}
+        onClose={() => setEdit(null)}
+        title="Edit section (HTML)"
+        wide="xl"
+        footer={
+          <Btn
+            onClick={async () => {
+              if (!edit) return;
+              await op(edit.i, 'edit', { html: edit.html });
+              setEdit(null);
+            }}
+          >
+            <Save className="h-4 w-4" /> Save section
+          </Btn>
+        }
+      >
+        {edit && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500">Change texts, links, pictures or layout of this section. Texts you change show in English; translate them afterwards with &quot;Translate new texts&quot; on the HTML tab, or in Translations.</p>
+            <textarea spellCheck={false} className="admin-input min-h-[60vh] font-mono text-[11px] leading-snug" value={edit.html} onChange={(e) => setEdit({ ...edit, html: e.target.value })} />
+          </div>
+        )}
+      </Modal>
+      <AddSectionModal at={add} path={path} pages={pages || []} onClose={() => setAdd(null)} onDone={async () => {
+        setAdd(null);
+        await load();
+        setTick((x) => x + 1);
+        onChanged?.();
+      }} />
+    </div>
+  );
+}
+
+function AddSectionModal({ at, path, pages, onClose, onDone }: { at: number | null; path: string; pages: { path: string; title: string }[]; onClose: () => void; onDone: () => void }) {
+  const [mode, setMode] = useState<'text' | 'copy' | 'html'>('text');
+  const [body, setBody] = useState('## New section\n\nWrite the text here.');
+  const [sand, setSand] = useState(false);
+  const [html, setHtml] = useState('<section><div class="wrap">\n  <h2>New section</h2>\n  <p>Text</p>\n</div></section>');
+  const [from, setFrom] = useState(path);
+  const [fromList, setFromList] = useState<SectionRow[]>([]);
+  const [fromI, setFromI] = useState(0);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (at === null || mode !== 'copy') return;
+    api(`${C}/sections?path=${encodeURIComponent(from)}`)
+      .then((d) => {
+        setFromList(d.sections);
+        setFromI(0);
+      })
+      .catch(() => setFromList([]));
+  }, [at, mode, from]);
+  async function go() {
+    setBusy(true);
+    try {
+      const i = at === -1 ? -1 : at;
+      if (mode === 'text') await api(`${C}/section`, 'POST', { path, i, op: 'add-text', body, sand });
+      else if (mode === 'html') await api(`${C}/section`, 'POST', { path, i, op: 'add-html', html });
+      else await api(`${C}/section`, 'POST', { path, i, op: 'add-copy', fromPath: from, fromI: fromList[fromI]?.i });
+      toast('Section added — live on the website');
+      onDone();
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      open={at !== null}
+      onClose={onClose}
+      title="Add a section"
+      wide="xl"
+      footer={
+        <Btn onClick={go} loading={busy}>
+          <Plus className="h-4 w-4" /> Add section
+        </Btn>
+      }
+    >
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ['text', 'Write text'],
+              ['copy', 'Copy a section from a page'],
+              ['html', 'HTML'],
+            ] as const
+          ).map(([m, l]) => (
+            <button key={m} type="button" onClick={() => setMode(m)} className={cn('rounded-xl px-4 py-2 text-sm font-bold', mode === m ? 'bg-ink text-white' : 'bg-white ring-1 ring-gray-200')}>
+              {l}
+            </button>
+          ))}
+        </div>
+        {mode === 'text' && (
+          <>
+            <RichEditor value={body} onChange={setBody} minH={280} />
+            <Toggle checked={sand} onChange={setSand} label="Sand-coloured background" />
+          </>
+        )}
+        {mode === 'html' && <textarea spellCheck={false} className="admin-input min-h-[40vh] font-mono text-[11px]" value={html} onChange={(e) => setHtml(e.target.value)} />}
+        {mode === 'copy' && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="admin-label">From the page</label>
+              <select className="admin-input" value={from} onChange={(e) => setFrom(e.target.value)}>
+                {[{ path, title: 'This page' }, ...pages.filter((p) => p.path !== path)].map((p) => (
+                  <option key={p.path} value={p.path}>
+                    {p.title} — {p.path}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="admin-label">Section</label>
+              <select className="admin-input" value={fromI} onChange={(e) => setFromI(Number(e.target.value))}>
+                {fromList.map((s, k) => (
+                  <option key={s.i} value={k}>
+                    {k + 1}. {s.title} ({s.kind})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/* ================================================================ PAGE BUILDER: pictures */
+export function PicturesPanel({ path, onChanged }: { path: string; onChanged?: () => void }) {
+  const [list, setList] = useState<{ src: string; alt: string; kind: string; count: number }[] | null>(null);
+  const [pick, setPick] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ from: string; to: string; alt: string; everywhere: boolean; kind: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => api(`${C}/images?path=${encodeURIComponent(path)}`).then((d) => setList(d.images)), [path]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  const url = (s: string) => (/^(https?:)?\//.test(s) ? s : '/' + s);
+  if (!list) return <Spinner />;
+  return (
+    <Card title={`Pictures on this page (${list.length})`}>
+      <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {list.map((im) => (
+          <div key={im.src} className="overflow-hidden rounded-xl ring-1 ring-gray-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url(im.src)} alt="" className="h-32 w-full bg-gray-50 object-cover" />
+            <div className="space-y-1 p-2">
+              <p className="truncate font-mono text-[10px] text-gray-400" title={im.src}>
+                {im.src}
+              </p>
+              <p className="truncate text-xs text-gray-600">{im.kind === 'background' ? 'Background picture' : im.alt || '(no description)'}{im.count > 1 ? ` · ${im.count}×` : ''}</p>
+              <Btn size="sm" variant="outline" className="w-full" onClick={() => setPick(im.src)}>
+                <ImageIcon className="h-3.5 w-3.5" /> Replace
+              </Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+      <MediaPickerModal
+        open={!!pick}
+        onClose={() => setPick(null)}
+        onSelect={(to) => {
+          const im = list.find((x) => x.src === pick);
+          setConfirm({ from: pick!, to, alt: im?.alt || '', everywhere: false, kind: im?.kind || 'img' });
+          setPick(null);
+        }}
+      />
+      <Modal
+        open={!!confirm}
+        onClose={() => setConfirm(null)}
+        title="Replace picture"
+        wide
+        footer={
+          <Btn
+            loading={busy}
+            onClick={async () => {
+              if (!confirm) return;
+              setBusy(true);
+              try {
+                await api(`${C}/image`, 'POST', { path, from: confirm.from, to: confirm.to, alt: confirm.kind === 'img' ? confirm.alt : undefined, everywhere: confirm.everywhere });
+                toast(confirm.everywhere ? 'Picture replaced on every page' : 'Picture replaced on this page');
+                setConfirm(null);
+                load();
+                onChanged?.();
+              } catch (e: any) {
+                toast(e.message, 'error');
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <Save className="h-4 w-4" /> Replace
+          </Btn>
+        }
+      >
+        {confirm && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url(confirm.from)} alt="" className="h-32 w-full rounded-lg object-cover" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url(confirm.to)} alt="" className="h-32 w-full rounded-lg object-cover" />
+            </div>
+            {confirm.kind === 'img' && !confirm.everywhere && (
+              <div>
+                <label className="admin-label">Picture description (for Google and screen readers)</label>
+                <input className="admin-input" value={confirm.alt} onChange={(e) => setConfirm({ ...confirm, alt: e.target.value })} />
+              </div>
+            )}
+            <Toggle checked={confirm.everywhere} onChange={(v) => setConfirm({ ...confirm, everywhere: v })} label="Replace this picture on every page of the website" />
+          </div>
+        )}
+      </Modal>
+    </Card>
+  );
+}
+
+/* ================================================================ HEADER, MENU & FOOTER */
+export function LayoutAdmin() {
+  const { engine } = useEngine();
+  const [d, setD] = useState<any>(null);
+  const [tab, setTab] = useState<'header' | 'footer' | 'rules'>('header');
+  const [busy, setBusy] = useState('');
+  const [k, setK] = useState(0);
+  const { run, busy: running, bar } = useLangRunner();
+  const load = useCallback(() => api(`${C}/chrome`).then(setD), []);
+  useEffect(() => {
+    load();
+  }, [load]);
+  async function save(body: any, msg: string) {
+    setBusy('save');
+    try {
+      await api(`${C}/chrome`, 'POST', body);
+      toast(msg);
+      await load();
+      setK((x) => x + 1);
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy('');
+    }
+  }
+  if (!d) return <Spinner />;
+  const rules: { find: string; replace: string; on: boolean; kind: 'text' | 'image'; note?: string }[] = d.rules || [];
+  const setRules = (r: typeof rules) => setD({ ...d, rules: r });
+  return (
+    <div>
+      <PageTitle
+        title="Header, menu & footer"
+        subtitle="The top bar, logo and menu (with its drop-down menus) and the footer are the same on every page: change them here once. Site-wide replacements change a phone number, email, link or picture everywhere."
+        actions={
+          <Btn
+            variant="outline"
+            disabled={running || !!engine?.problem}
+            onClick={() =>
+              run(OTHER_LANGS, async (l) => {
+                const x = await api(`${C}/translate`, 'POST', { kind: 'chrome', lang: l });
+                if (!x.ok) throw new Error(x.error);
+              })
+            }
+          >
+            <Sparkles className="h-4 w-4" /> Translate new texts
+          </Btn>
+        }
+      />
+      <EngineNote engine={engine} />
+      {bar && <div className="mb-4">{bar}</div>}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(
+          [
+            ['header', `Header & menu${d.headerChanged ? ' (changed)' : ''}`],
+            ['footer', `Footer & pop-ups${d.footerChanged ? ' (changed)' : ''}`],
+            ['rules', `Site-wide replacements (${rules.length})`],
+          ] as const
+        ).map(([t, l]) => (
+          <button key={t} type="button" onClick={() => setTab(t)} className={cn('rounded-xl px-4 py-2 text-sm font-bold', tab === t ? 'bg-ink text-white' : 'bg-white ring-1 ring-gray-200')}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {tab !== 'rules' ? (
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Card
+            title={tab === 'header' ? 'Header and menu (HTML)' : 'Footer (HTML)'}
+            actions={
+              <div className="flex gap-2">
+                {(tab === 'header' ? d.headerChanged : d.footerChanged) && (
+                  <Btn
+                    size="sm"
+                    variant="ghost"
+                    onClick={async () => (await confirmDialog('Back to the original?')) && save(tab === 'header' ? { resetHeader: true } : { resetFooter: true }, 'Back to the original')}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Original
+                  </Btn>
+                )}
+                <Btn size="sm" loading={busy === 'save'} onClick={() => save({ [tab]: d[tab] }, 'Saved — live on every page')}>
+                  <Save className="h-3.5 w-3.5" /> Save
+                </Btn>
+              </div>
+            }
+          >
+            <div className="p-4">
+              <p className="mb-2 text-xs text-gray-500">
+                {tab === 'header'
+                  ? 'Menu items are the <li><a href="…">…</a></li> lines; drop-down menus are the "mega" blocks. Add, remove or rename items, change links or the top-bar messages.'
+                  : 'Footer columns, links, contact details and the bottom line — and the parts every page shows at the bottom: WhatsApp and chat buttons, the chat panel, the offer pop-up and the cookie bar.'}
+              </p>
+              <textarea spellCheck={false} className="admin-input min-h-[68vh] font-mono text-[11px] leading-snug" value={d[tab]} onChange={(e) => setD({ ...d, [tab]: e.target.value })} />
+            </div>
+          </Card>
+          <LivePreview path="/" key={k} />
+        </div>
+      ) : (
+        <Card
+          title="Site-wide replacements"
+          actions={
+            <Btn size="sm" loading={busy === 'save'} onClick={() => save({ rules }, 'Saved — live on every page')}>
+              <Save className="h-3.5 w-3.5" /> Save
+            </Btn>
+          }
+        >
+          <div className="space-y-3 p-4">
+            <p className="text-xs text-gray-500">Each line replaces exactly this text (or picture) on every page, in every language. For example a new WhatsApp number: find 971566556645, replace with your new number (it also changes the WhatsApp links).</p>
+            {rules.map((r, i) => (
+              <div key={i} className="grid items-center gap-2 rounded-xl p-2 ring-1 ring-gray-200 md:grid-cols-[110px_1fr_1fr_auto]">
+                <select className="admin-input !py-1.5 text-xs" value={r.kind} onChange={(e) => setRules(rules.map((x, j) => (j === i ? { ...x, kind: e.target.value as any } : x)))}>
+                  <option value="text">Text / link</option>
+                  <option value="image">Picture</option>
+                </select>
+                <input className="admin-input text-sm" placeholder={r.kind === 'image' ? 'assets/img/old.jpg' : 'Find…'} value={r.find} onChange={(e) => setRules(rules.map((x, j) => (j === i ? { ...x, find: e.target.value } : x)))} />
+                <input className="admin-input text-sm" placeholder={r.kind === 'image' ? '/uploads/media/new.jpg' : 'Replace with…'} value={r.replace} onChange={(e) => setRules(rules.map((x, j) => (j === i ? { ...x, replace: e.target.value } : x)))} />
+                <div className="flex items-center gap-2">
+                  <Toggle checked={r.on} onChange={(v) => setRules(rules.map((x, j) => (j === i ? { ...x, on: v } : x)))} />
+                  <button type="button" className="rounded p-1 text-red-500 hover:bg-red-50" onClick={() => setRules(rules.filter((_, j) => j !== i))} title="Remove">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <Btn size="sm" variant="outline" onClick={() => setRules([...rules, { kind: 'text', find: '', replace: '', on: true }])}>
+              <Plus className="h-3.5 w-3.5" /> Add replacement
+            </Btn>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}

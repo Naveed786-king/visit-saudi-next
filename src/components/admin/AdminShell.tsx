@@ -61,6 +61,7 @@ const NAV = [
     group: 'Website',
     items: [
       { href: '/admin/site-pages', label: 'Pages', icon: FileText, adminOnly: true },
+      { href: '/admin/site-layout', label: 'Header, menu & footer', icon: PanelBottom, adminOnly: true },
       { href: '/admin/site-posts', label: 'Posts & guides', icon: Newspaper, adminOnly: true },
       { href: '/admin/site-texts', label: 'Translations', icon: Languages, adminOnly: true },
       { href: '/admin/site-styling', label: 'Page styling', icon: Palette, adminOnly: true },

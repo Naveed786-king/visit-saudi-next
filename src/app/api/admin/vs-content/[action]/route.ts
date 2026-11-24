@@ -11,6 +11,32 @@ import { buildPost, buildSimplePage, pageTexts } from '@/lib/vs/pages';
 import { engineProblem, ensureStrings, followEnglishChange, siteTexts, translateFields, translationOf } from '@/lib/vs/translate';
 import { translationConfig } from '@/lib/i18n/translate';
 import { syncAutoPosts } from '@/lib/vs/autopost';
+import { chromeParts, hideEl, isHidden, joinPage, pageImages, replaceImage, rootPaths, sectionLabel, showEl, splitPage, textSection, type Rule } from '@/lib/vs/builder';
+import { richToHtml } from '@/lib/vs/rich';
+
+/** The HTML the builder works on: a copied page, or a website page (changed or original) */
+async function currentHtml(p: string): Promise<{ html: string; custom: boolean } | null> {
+  const custom = (await getVs('vs.pages')).find((x) => '/' + x.slug === p);
+  if (custom) return custom.mode === 'html' ? { html: custom.html || '', custom: true } : null;
+  const ov = (await getVs('vs.html'))[p];
+  if (ov) return { html: ov, custom: false };
+  return builtExists(p) ? { html: readBuilt(p), custom: false } : null;
+}
+async function saveHtml(p: string, html: string, custom: boolean) {
+  if (custom) {
+    const pages = await getVs('vs.pages');
+    const cp = pages.find((x) => '/' + x.slug === p);
+    if (cp) {
+      cp.html = html;
+      cp.updatedAt = new Date().toISOString();
+      await saveVs('vs.pages', pages);
+    }
+    return;
+  }
+  const all = await getVs('vs.html');
+  all[p] = html;
+  await saveVs('vs.html', all);
+}
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -169,6 +195,39 @@ export async function GET(req: Request, ctx: { params: Promise<{ action: string 
         missing,
         changed: Object.keys(ed).length,
         strings: hits.slice(0, 100).map((k) => ({ src: k, en: content.en?.[k] ?? decEnt(k), value: lang === 'en' ? content.en?.[k] ?? decEnt(k) : val(k), changed: ed[k] !== undefined, pages: (texts.get(k) || []).length })),
+      });
+    }
+    case 'sections': {
+      const p = String(url.searchParams.get('path') || '');
+      const cur = await currentHtml(p);
+      if (!cur) return json(404, { ok: false, error: 'This page is written in the editor - change it there' });
+      const sp = splitPage(cur.html);
+      return json(200, { ok: true, sections: sp.items.map((el, i) => ({ i, ...sectionLabel(el), hidden: isHidden(el), size: el.length })) });
+    }
+    case 'section': {
+      const p = String(url.searchParams.get('path') || '');
+      const i = Number(url.searchParams.get('i'));
+      const cur = await currentHtml(p);
+      const el = cur ? splitPage(cur.html).items[i] : undefined;
+      return el === undefined ? json(404, { ok: false }) : json(200, { ok: true, html: showEl(el), hidden: isHidden(el) });
+    }
+    case 'images': {
+      const p = String(url.searchParams.get('path') || '');
+      const cur = await currentHtml(p);
+      if (!cur) return json(404, { ok: false });
+      return json(200, { ok: true, images: pageImages(cur.html) });
+    }
+    case 'chrome': {
+      const c = await getVs('vs.chrome');
+      const home = readBuilt('/');
+      const parts = chromeParts(home);
+      return json(200, {
+        ok: true,
+        header: c.header || (parts.header ? rootPaths(home.slice(parts.header.a, parts.header.b)) : ''),
+        footer: c.footer || (parts.footer ? rootPaths(home.slice(parts.footer.a, parts.footer.b)) : ''),
+        headerChanged: !!c.header,
+        footerChanged: !!c.footer,
+        rules: c.rules || [],
       });
     }
     case 'text': {
@@ -402,6 +461,112 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
       const post: VsPost = { slug: slugify(b.slug || b.title) || 'preview', title: String(b.title || ''), cat: String(b.cat || 'News'), excerpt: String(b.excerpt || ''), image: String(b.image || ''), body: String(b.body || ''), html: b.html ? String(b.html) : undefined, date: new Date().toISOString().slice(0, 10), published: true, tr: cleanTr(b.tr) };
       return json(200, { ok: true, html: buildPost(post, lang) });
     }
+    /* ---------- page builder: sections, pictures, header / footer, site-wide rules ---------- */
+    case 'section': {
+      const p = String(b.path || '');
+      const cur = await currentHtml(p);
+      if (!cur) return json(404, { ok: false, error: 'Page not found' });
+      const sp = splitPage(cur.html);
+      const i = Number(b.i);
+      const n = sp.items.length;
+      const gap = '\n';
+      const insertAt = (k: number, el: string) => {
+        sp.items.splice(k, 0, el);
+        sp.gaps.splice(k, 0, gap);
+      };
+      switch (b.op) {
+        case 'hide':
+          if (sp.items[i] !== undefined) sp.items[i] = hideEl(sp.items[i]);
+          break;
+        case 'show':
+          if (sp.items[i] !== undefined) sp.items[i] = showEl(sp.items[i]);
+          break;
+        case 'up':
+        case 'down': {
+          const j = b.op === 'up' ? i - 1 : i + 1;
+          if (i < 0 || j < 0 || i >= n || j >= n) break;
+          [sp.items[i], sp.items[j]] = [sp.items[j], sp.items[i]];
+          break;
+        }
+        case 'duplicate':
+          if (sp.items[i] !== undefined) insertAt(i + 1, showEl(sp.items[i]).replace(/\sid="[^"]*"/, ''));
+          break;
+        case 'delete':
+          if (sp.items[i] !== undefined) {
+            sp.items.splice(i, 1);
+            sp.gaps.splice(i, 1);
+          }
+          break;
+        case 'edit': {
+          const h = String(b.html || '').trim();
+          if (!h) return json(400, { ok: false, error: 'Empty section - use Delete to remove it' });
+          if (sp.items[i] !== undefined) sp.items[i] = isHidden(sp.items[i]) ? hideEl(h) : h;
+          break;
+        }
+        case 'add-text': {
+          // a new section written in the editor format
+          const h = textSection(richToHtml(String(b.body || '')), !!b.sand);
+          insertAt(Math.max(0, Math.min(n, Number.isFinite(i) ? i + 1 : n)), h);
+          break;
+        }
+        case 'add-html': {
+          const h = String(b.html || '').trim();
+          if (!h) return json(400, { ok: false, error: 'Empty section' });
+          insertAt(Math.max(0, Math.min(n, Number.isFinite(i) ? i + 1 : n)), h);
+          break;
+        }
+        case 'add-copy': {
+          // a section copied from another page of the website
+          const src = await currentHtml(String(b.fromPath || ''));
+          const el = src ? splitPage(src.html).items[Number(b.fromI)] : undefined;
+          if (el === undefined) return json(404, { ok: false, error: 'Section to copy not found' });
+          insertAt(Math.max(0, Math.min(n, Number.isFinite(i) ? i + 1 : n)), rootPaths(showEl(el)).replace(/\sid="[^"]*"/, ''));
+          break;
+        }
+        default:
+          return json(400, { ok: false, error: 'Unknown change' });
+      }
+      await saveHtml(p, joinPage(sp), cur.custom);
+      return json(200, { ok: true });
+    }
+    case 'image': {
+      const p = String(b.path || '');
+      const from = String(b.from || '');
+      const to = String(b.to || '').trim();
+      if (!from || !/^(\/|https:\/\/)[^\s"'<>()]+$/.test(to)) return json(400, { ok: false, error: 'Choose a picture' });
+      if (b.everywhere) {
+        const c = await getVs('vs.chrome');
+        const rules = (c.rules || []).filter((r) => !(r.kind === 'image' && r.find === from));
+        rules.push({ kind: 'image', find: from, replace: to, on: true, note: 'Picture replaced on every page' });
+        await saveVs('vs.chrome', { ...c, rules });
+        return json(200, { ok: true, everywhere: true });
+      }
+      const cur = await currentHtml(p);
+      if (!cur) return json(404, { ok: false });
+      await saveHtml(p, replaceImage(cur.html, from, to, b.alt === undefined ? undefined : String(b.alt).slice(0, 300)), cur.custom);
+      return json(200, { ok: true });
+    }
+    case 'chrome': {
+      const c = await getVs('vs.chrome');
+      const next = { ...c };
+      for (const k of ['header', 'footer'] as const) {
+        if (b['reset' + (k === 'header' ? 'Header' : 'Footer')]) delete next[k];
+        else if (typeof b[k] === 'string') {
+          const h = b[k].trim();
+          const tag = k === 'header' ? '<header' : '<footer';
+          if (h && !h.includes(tag)) return json(400, { ok: false, error: k === 'header' ? 'The header must keep its <header …> … </header> part' : 'The footer must start with <footer …>' });
+          if (h) next[k] = h.slice(0, 300000);
+        }
+      }
+      if (Array.isArray(b.rules)) {
+        next.rules = (b.rules as Rule[])
+          .map((r) => ({ kind: r.kind === 'image' ? 'image' : 'text', find: String(r.find || '').slice(0, 500), replace: String(r.replace ?? '').slice(0, 2000), on: r.on !== false, note: String(r.note || '').slice(0, 120) }) as Rule)
+          .filter((r) => r.find)
+          .slice(0, 200);
+      }
+      await saveVs('vs.chrome', next);
+      return json(200, { ok: true });
+    }
     /* ---------- translation ---------- */
     case 'translate': {
       // one item into one language (the admin screen goes through the languages one by one and shows progress)
@@ -437,6 +602,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
           const [meta, htmlOv] = await Promise.all([getVs('vs.pageMeta'), getVs('vs.html')]);
           const strings = [meta[p]?.title || '', meta[p]?.description || '', ...(htmlOv[p] ? pageTexts(htmlOv[p]) : [])].filter(Boolean);
           const n = await ensureStrings(strings, lang, force);
+          return json(200, { ok: true, translated: n });
+        }
+        if (b.kind === 'chrome') {
+          // new texts of the header, menu and footer
+          const c = await getVs('vs.chrome');
+          const n = await ensureStrings(pageTexts((c.header || '') + (c.footer || '')), lang, false);
           return json(200, { ok: true, translated: n });
         }
         if (b.kind === 'text') {

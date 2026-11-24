@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import { htmlToRich, richToHtml } from './rich';
+import { applyChrome, applyRules } from './builder';
 import { buildHtmlPage, buildPost, buildSimplePage, emptyExtra, injectPostCards, setHead, sitemapXml, type SiteExtra } from './pages';
 
 export const SITE_ROOT = path.join(process.cwd(), 'site', 'public');
@@ -287,6 +288,8 @@ export async function renderPage(pathname: string, search: string, src: RenderSo
   }
   const styling = await src.styling();
   let page: string = html as string;
+  // header with the menu and footer changed in Admin → Header, menu & footer (every page)
+  if (changed && ex.chrome && (ex.chrome.header || ex.chrome.footer)) page = applyChrome(page, ex.chrome);
   if (Object.keys(govs).length) {
     const gm = p.match(/^\/guides\/([a-z0-9-]+)$/);
     if (gm && govs[gm[1]] && !own) {
@@ -305,5 +308,7 @@ export async function renderPage(pathname: string, search: string, src: RenderSo
   }
   if (reqLang) page = translateHtml(page, reqLang, p, await src.edits(reqLang));
   else page = applyEditsEn(page, await src.edits('en'));
-  return { kind: 'html', status: 200, body: applyStyling(page, p, styling) };
+  page = applyStyling(page, p, styling);
+  if (changed && ex.chrome?.rules?.length) page = applyRules(page, ex.chrome.rules);
+  return { kind: 'html', status: 200, body: page };
 }

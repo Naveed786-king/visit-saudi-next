@@ -95,3 +95,32 @@ post text '{"src":"Apply Now","values":{"de":"","fr":""}}' >/dev/null
 r=$(post translate '{"kind":"fields","lang":"ar","fields":{"title":"Hello"}}' || true)
 echo "translate without engine: $r"
 echo "All content tests passed"
+
+# ---- page builder: sections, pictures, header / footer, site-wide replacements (and back)
+A2="$B/api/admin/vs-content"
+curl -sf -b cookies.txt "$A2/sections?path=/about" | grep -q '"sections"' || fail "sections list"
+curl -sf -b cookies.txt "$A2/images?path=/about" | grep -q '"images"' || fail "pictures list"
+post section '{"path":"/about","i":0,"op":"add-text","body":"## CI SECTION\n\nCI section text"}' >/dev/null
+sleep 6
+curl -sf "$B/about" | grep -q 'CI section text' || fail "added section"
+post section '{"path":"/about","i":1,"op":"hide"}' >/dev/null
+sleep 6
+curl -sf "$B/about" | grep -q '<template data-vs-hidden="1"><section><div class="wrap"><div class="article">' || fail "hidden section"
+IMG=$(curl -sf -b cookies.txt "$A2/images?path=/about" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);process.stdout.write(j.images[0].src)})')
+echo "first picture: $IMG"
+post image "{\"path\":\"/about\",\"from\":\"$IMG\",\"to\":\"/uploads/media/ci.jpg\",\"everywhere\":true}" >/dev/null
+sleep 6
+curl -sf "$B/" | grep -q '/uploads/media/ci.jpg' || curl -sf "$B/about" | grep -q '/uploads/media/ci.jpg' || fail "picture everywhere"
+H=$(curl -sf -b cookies.txt "$A2/chrome" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);process.stdout.write(JSON.stringify({header:j.header.replace("</header>","<!--ci--></header>"),footer:j.footer.replace("</footer>","CI FOOTER</footer>"),rules:[{kind:"text",find:"971566556645",replace:"971500000000",on:true}]}))})')
+post chrome "$H" >/dev/null
+sleep 6
+G=$(curl -sf "$B/guides/alula-travel-guide")
+echo "$G" | grep -q 'CI FOOTER' || fail "footer on every page"
+echo "$G" | grep -q '<!--ci--></header>' || fail "header on every page"
+echo "$G" | grep -q 'wa.me/971500000000' || fail "site-wide replacement"
+echo "$G" | grep -q 'wa.me/971566556645' && fail "old number still there"
+curl -sf "$B/ar/guides/alula-travel-guide" | grep -q 'wa.me/971500000000' || fail "replacement in Arabic"
+# all back
+post chrome '{"resetHeader":true,"resetFooter":true,"rules":[]}' >/dev/null
+post page-html '{"path":"/about","reset":true}' >/dev/null
+echo "Page builder tests passed"

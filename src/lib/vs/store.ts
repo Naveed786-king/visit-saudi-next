@@ -2,6 +2,7 @@
 // one row per store. A short cache keeps page rendering fast; saving clears it.
 import { prisma } from '@/lib/db';
 import type { Edits, GuideOverride, Styling } from './render';
+import type { Chrome } from './builder';
 
 export type VsPrice = { amount: number; currency: string };
 export type VsSite = {
@@ -92,6 +93,8 @@ type Stores = {
   'vs.pageMeta': Record<string, VsPageMeta>;
   /** full HTML of a website page changed in Admin → Pages → HTML (path -> html) */
   'vs.html': Record<string, string>;
+  /** header + menu, footer (all pages) and site-wide replacements */
+  'vs.chrome': Chrome;
 };
 const DEFAULTS: Stores = {
   'vs.site': DEFAULT_VS_SITE,
@@ -105,6 +108,7 @@ const DEFAULTS: Stores = {
   'vs.pages': [],
   'vs.pageMeta': {},
   'vs.html': {},
+  'vs.chrome': {},
 };
 
 const cache = new Map<string, { at: number; v: unknown }>();

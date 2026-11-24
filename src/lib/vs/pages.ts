@@ -7,13 +7,14 @@ import { SITE_ROOT, LANG_LIST } from './render';
 import { decEnt, escAttr, escText } from './esc';
 import { richHeadings, richToHtml, readingMinutes } from './rich';
 import type { VsPage, VsPageMeta, VsPost, VsTr } from './store';
+import type { Chrome } from './builder';
 
 export const SITE_BASE = 'https://visit-saudi.ae';
 const BRAND_TAIL = ' | Visit Saudi - visit-saudi.ae';
 
 /** What the admin added or changed (all optional) */
-export type SiteExtra = { pages: VsPage[]; posts: VsPost[]; meta: Record<string, VsPageMeta>; html: Record<string, string> };
-export const emptyExtra = (x: Partial<SiteExtra>) => !(x.pages?.length || x.posts?.length || Object.keys(x.meta || {}).length || Object.keys(x.html || {}).length);
+export type SiteExtra = { pages: VsPage[]; posts: VsPost[]; meta: Record<string, VsPageMeta>; html: Record<string, string>; chrome?: Chrome };
+export const emptyExtra = (x: Partial<SiteExtra>) => !(x.pages?.length || x.posts?.length || Object.keys(x.meta || {}).length || Object.keys(x.html || {}).length || x.chrome?.header || x.chrome?.footer || x.chrome?.rules?.some((r) => r.on));
 
 const tplCache: Record<string, { mtime: number; html: string }> = {};
 function template(rel: string) {

@@ -29,8 +29,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 async function extra() {
-  const [pages, posts, meta, html] = await Promise.all([getVs('vs.pages'), getVs('vs.posts'), getVs('vs.pageMeta'), getVs('vs.html')]);
-  return { pages, posts, meta, html };
+  const [pages, posts, meta, html, chrome] = await Promise.all([getVs('vs.pages'), getVs('vs.posts'), getVs('vs.pageMeta'), getVs('vs.html'), getVs('vs.chrome')]);
+  return { pages, posts, meta, html, chrome };
 }
 const sources = { edits: editsFor, guides: () => getVs('vs.guides'), styling: stylingCss, extra };
 
