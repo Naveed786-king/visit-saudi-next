@@ -17,7 +17,7 @@ const MAX_LABEL = process.env.VERCEL ? '4 MB' : '15 MB';
 export async function writeStored(rel: string, data: Buffer, mime: string) {
   if (STORE_IN_DB) {
     const { prisma } = await import('./db');
-    await prisma.storedFile.create({ data: { key: rel, data, mime, size: data.length } });
+    await prisma.storedFile.create({ data: { key: rel, data: new Uint8Array(data), mime, size: data.length } });
     return;
   }
   const full = path.join(UPLOAD_ROOT, rel);
