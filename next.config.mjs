@@ -19,9 +19,9 @@ const nextConfig = {
   },
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
-  // a test copy on staging.<domain> stays out of Google (the real site is unaffected)
+  // a test copy (staging.<domain> or xCloud's *.1wp.site test address) stays out of Google (the real site is unaffected)
   async headers() {
-    return [{ source: '/:path*', has: [{ type: 'host', value: 'staging\\..*' }], headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
+    return [{ source: '/:path*', has: [{ type: 'host', value: '(staging\\..*|.*\\.1wp\\.site)' }], headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
   },
   // Let's Encrypt SSL check files (free https certificate on xCloud / VPS)
   async rewrites() {
