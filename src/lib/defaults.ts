@@ -285,7 +285,8 @@ export type TranslationSettings = {
 };
 
 export const defaultTranslation: TranslationSettings = {
-  provider: 'gemini',
+  // free Google Translate works at once; with a Gemini key in the environment Gemini is used
+  provider: process.env.GEMINI_API_KEY ? 'gemini' : 'google',
   apiKey: '',
   model: 'claude-sonnet-5-5',
   geminiKey: process.env.GEMINI_API_KEY || '',

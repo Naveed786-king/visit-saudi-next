@@ -111,7 +111,7 @@ async function claudeCall(apiKey: string, model: string, system: string, content
     await sleep(Math.min(60_000, 4000 * 2 ** attempt));
     return claudeCall(apiKey, model, system, content, attempt + 1);
   }
-  if (res.status === 401) throw new Error('Claude API key is not valid - check it in Admin → Languages');
+  if (res.status === 401) throw new Error('Claude API key is not valid - check it in Admin → Translations');
   if (!res.ok) throw new Error(`Claude API HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const d: any = await res.json();
   return (d.content || []).map((c: any) => c.text || '').join('');
@@ -150,10 +150,10 @@ async function geminiCall(apiKey: string, model: string, system: string, content
   }
   if (res.status === 400 || res.status === 401 || res.status === 403) {
     const t = await res.text();
-    if (/API key|API_KEY|PERMISSION_DENIED|UNAUTHENTICATED/i.test(t)) throw new Error('Gemini API key is not valid - check it in Admin → Languages');
+    if (/API key|API_KEY|PERMISSION_DENIED|UNAUTHENTICATED/i.test(t)) throw new Error('Gemini API key is not valid - check it in Admin → Translations');
     throw new Error(`Gemini API HTTP ${res.status}: ${t.slice(0, 200)}`);
   }
-  if (res.status === 404) throw new Error(`Gemini model "${model}" was not found - choose another model in Admin → Languages`);
+  if (res.status === 404) throw new Error(`Gemini model "${model}" was not found - choose another model in Admin → Translations`);
   if (!res.ok) throw new Error(`Gemini API HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const d: any = await res.json();
   const cand = d.candidates?.[0];
@@ -192,7 +192,7 @@ async function deeplMany(texts: string[], locale: string, apiKey: string, html =
     body.set('target_lang', target);
     if (html) body.set('tag_handling', 'html');
     const res = await fetch(`${host}/v2/translate`, { method: 'POST', headers: { Authorization: `DeepL-Auth-Key ${apiKey}` }, body });
-    if (res.status === 403) throw new Error('DeepL API key is not valid - check it in Admin → Languages');
+    if (res.status === 403) throw new Error('DeepL API key is not valid - check it in Admin → Translations');
     if (res.status === 456) throw new Error('DeepL monthly limit reached');
     if (!res.ok) throw new Error(`DeepL HTTP ${res.status}`);
     const d: any = await res.json();
@@ -240,7 +240,7 @@ export async function engineTag() {
 export function notReadyReason(cfg: Cfg) {
   if (cfg.provider === 'off') return 'Translation is turned off';
   const names: Record<string, string> = { claude: 'Claude (Anthropic)', deepl: 'DeepL', gemini: 'Google Gemini' };
-  if (names[cfg.provider] && !providerKey(cfg)) return `Add your ${names[cfg.provider]} API key in Admin → Languages to start translating`;
+  if (names[cfg.provider] && !providerKey(cfg)) return `Add your ${names[cfg.provider]} API key in Admin → Translations to start translating`;
   return '';
 }
 
