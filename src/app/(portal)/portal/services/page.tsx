@@ -18,7 +18,7 @@ export default async function Services({ searchParams }: { searchParams: Promise
   const rows = await prisma.service.findMany({ where: { active: true }, orderBy: [{ category: 'asc' }, { order: 'asc' }] });
   const item = (r: (typeof rows)[number]) => ({ href: r.slug || r.id, label: r.title, note: r.subtitle || '', price: r.price || '' });
   const groups = [
-    { key: 'main', title: 'Golden Visa & residency', icon: 'star', items: rows.filter((r) => r.category !== 'additional').map(item) },
+    { key: 'main', title: 'Saudi visas', icon: 'star', items: rows.filter((r) => r.category !== 'additional').map(item) },
     { key: 'additional', title: 'More services', icon: 'briefcase', items: rows.filter((r) => r.category === 'additional').map(item) },
   ].filter((g) => g.items.length);
   return (

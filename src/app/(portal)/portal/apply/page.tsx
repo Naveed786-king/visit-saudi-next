@@ -12,28 +12,28 @@ import './apply.css';
 export const metadata: Metadata = { title: 'Apply online' };
 export const dynamic = 'force-dynamic';
 
-const GOLDEN_DOCS = ['Passport copy', 'Photo (white background)', 'Emirates ID (if you have one)', 'Proof for the Golden Visa (title deed, salary certificate, trade licence…)'];
-const OTHER_DOCS = ['Passport copy', 'Photo (white background)', 'Current UAE visa (if any)'];
+const GOLDEN_DOCS = ['Passport copy (valid 6+ months)', 'Photo (white background)', 'UAE residence visa or Emirates ID (if you live in the UAE)', 'Flight and hotel booking (if you have them)'];
+const OTHER_DOCS = GOLDEN_DOCS;
 
 /** Services from Admin > Services, in the groups of the application form. */
 async function applyServices(): Promise<ApplyService[]> {
   const rows = await prisma.service.findMany({ where: { active: true }, orderBy: [{ category: 'asc' }, { order: 'asc' }] });
   const list = rows.map((r) => {
-    const golden = /golden/i.test(r.title);
-    const fam = /family|dependant|spouse|child|parent|golden|residen/i.test(r.title);
+    const golden = /umrah|hajj/i.test(r.title);
+    const fam = /family|friends|personal/i.test(r.title);
     return {
       id: r.slug || r.id,
       label: r.title,
-      group: golden ? 'Golden Visa' : /visa|family|dependant|newborn|maid|nanny|emirates id|medical|residen/i.test(r.title) ? 'Family & residency' : 'Other services',
+      group: golden ? 'Umrah & Hajj' : /guidance/i.test(r.title) ? 'Other services' : 'Saudi visit visas',
       note: r.subtitle || undefined,
       price: r.price || undefined,
       docs: golden ? GOLDEN_DOCS : OTHER_DOCS,
       family: fam,
     };
   });
-  const ORDER = ['Golden Visa', 'Family & residency', 'Other services'];
+  const ORDER = ['Saudi visit visas', 'Umrah & Hajj', 'Other services'];
   list.sort((a, b) => ORDER.indexOf(a.group) - ORDER.indexOf(b.group));
-  return list.length ? list : [{ id: 'golden-visa', label: 'UAE Golden Visa', group: 'Golden Visa', docs: GOLDEN_DOCS, family: true }];
+  return list.length ? list : [{ id: 'tourist', label: 'Tourist eVisa', group: 'Saudi visit visas', docs: GOLDEN_DOCS, family: true }];
 }
 
 /** Online application (the Abu Dhabi Golden Visa form): inside the dashboard when signed in, on its own page otherwise. */

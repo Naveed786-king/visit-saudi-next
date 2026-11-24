@@ -34,7 +34,7 @@ export function PayConfirm(p: P) {
   return (
     <main className="paywrap">
       <div className={`paycard ${state}`}>
-        <div className="paytop"><img src={coinImg()} alt="" width={44} height={44} /><span>Abu Dhabi Golden Visa</span></div>
+        <div className="paytop"><img src={coinImg()} alt="" width={44} height={44} /><span>Visit Saudi</span></div>
         <div className="paybody">
           {paid ? (
             <div className="pay-ok" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="M15 27l7 7 15-16" /></svg></div>

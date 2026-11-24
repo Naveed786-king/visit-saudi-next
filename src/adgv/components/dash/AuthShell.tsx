@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { coinImg, fullLogo } from '@/adgv/components/BrandLogo';
 
-const SERVICES = ['Golden Visa', 'Family Visa', 'Valuation Certificate', 'Attestation', 'Emirates ID', 'Legal Translation', 'PRO Services', 'Retirement Visa'];
+const SERVICES = ['Tourist eVisa', 'Umrah Visa', 'Family Visit Visa', '1 Year Multiple Entry', 'Business Visit Visa', 'Transit Visa', 'Medical Visa', '90 Days Multiple Entry'];
 
 /** Split sign-in layout: rotating services and benefits on the left, the form on the right. */
 export function AuthShell({ eyebrow, title, text, ticks, children, top }: { eyebrow: string; title: string; text: string; ticks: string[]; children: ReactNode; top?: ReactNode }) {

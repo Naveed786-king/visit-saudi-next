@@ -23,9 +23,19 @@ if (existsSync(envFile)) {
 if (!process.env.DATABASE_URL) process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL || '';
 const prisma = new PrismaClient();
 const force = process.argv.includes('--force');
-const C = await import('./content.mjs');
-const SP = await import('./service-pages.mjs');
-const faqs = JSON.parse(readFileSync(path.join(__dirname, 'faqs.json'), 'utf8'));
+const VS_SERVICES = [
+  { title: '1 Year Multiple Entry Visa', slug: 'one-year-multiple', subtitle: 'Multiple entries for one year', icon: 'star', price: 'USD 300', link: '/visa/one-year-multiple' },
+  { title: '90 Days Multiple Entry Visa', slug: 'ninety-day-multiple', subtitle: 'Multiple entries for 90 days', icon: 'star', price: 'USD 200', link: '/visa/ninety-day-multiple' },
+  { title: 'Umrah Visa', slug: 'umrah', subtitle: 'Umrah pilgrimage', icon: 'star', price: 'USD 250', link: '/visa/umrah' },
+  { title: 'Tourist eVisa', slug: 'tourist', subtitle: 'Tourism, events and family visits', icon: 'globe', price: null, link: '/visa/tourist' },
+  { title: 'Family & Friends Visit Visa', slug: 'family', subtitle: 'Visit family or friends in Saudi Arabia', icon: 'family', price: null, link: '/visa/family' },
+  { title: 'Business Visit Visa', slug: 'business', subtitle: 'Meetings, conferences and business trips', icon: 'briefcase', price: null, link: '/visa/business' },
+  { title: 'Medical Treatment Visa', slug: 'medical', subtitle: 'Treatment in a Saudi hospital', icon: 'heart', price: null, link: '/visa/medical' },
+  { title: 'Personal Visit Visa', slug: 'personal', subtitle: 'Invitation from a Saudi resident', icon: 'user', price: null, link: '/visa/personal' },
+  { title: 'Stopover Transit Visa', slug: 'transit', subtitle: 'Stopover with Saudia or flynas', icon: 'plane', price: null, link: '/visa/transit' },
+  { title: 'Employment Visa Guidance', slug: 'work', subtitle: 'Guidance for work visas', icon: 'briefcase', price: null, link: '/visa/work' },
+  { title: 'Hajj Visa Guidance', slug: 'hajj', subtitle: 'Guidance for the Hajj season', icon: 'star', price: null, link: '/visa/hajj' },
+];
 
 async function main() {
   // 1) Admin user
@@ -34,7 +44,7 @@ async function main() {
     // No default password on public hosting: the first visitor of /admin/login creates the admin account.
     console.log('ℹ No admin yet - open /admin/login on your website to create the admin account.');
   } else if (adminCount === 0) {
-    const email = (process.env.ADMIN_EMAIL || 'admin@rakgoldenvisa.com').toLowerCase();
+    const email = (process.env.ADMIN_EMAIL || 'admin@visit-saudi.ae').toLowerCase();
     const password = process.env.ADMIN_PASSWORD || 'Admin@12345';
     await prisma.user.upsert({
       where: { email },
@@ -44,54 +54,13 @@ async function main() {
     console.log(`✔ Admin user created: ${email} / ${password}  (change it after first login!)`);
   }
 
-  // 1b) One-time upgrades for websites created with an older version
-  await upgrades();
-  // 1c) Built-in professional translations of the original website texts
-  await loadTranslationPacks();
-
-  // 2) Content
-  const pageCount = await prisma.page.count();
-  if (pageCount > 0 && !force) {
-    console.log('✔ Database already has content — skipping content seed (use "npm run seed:reset" to restore the original content).');
-    await servicePages();
-    return;
+  // 2) The Saudi visas offered in the client dashboard (Admin → Services). The website pages themselves are the
+  //    finished HTML in site/public and need no database content.
+  if ((await prisma.service.count()) === 0 || force) {
+    if (force) await prisma.service.deleteMany({});
+    for (const [i, s] of VS_SERVICES.entries()) await prisma.service.create({ data: { ...s, category: 'main', order: i + 1, active: true } });
+    console.log(`✔ ${VS_SERVICES.length} visa services`);
   }
-
-  if (force) {
-    await prisma.page.deleteMany({ where: { slug: { in: C.allPages.map((p) => p.slug) } } });
-    await prisma.post.deleteMany({ where: { slug: { in: C.posts.map((p) => p.slug) } } });
-    await prisma.service.deleteMany({});
-    await prisma.faq.deleteMany({});
-    await prisma.partner.deleteMany({});
-  }
-
-  for (const p of C.allPages) {
-    await prisma.page.create({
-      data: { slug: p.slug, title: p.title, metaTitle: p.metaTitle, metaDescription: p.metaDescription, blocks: JSON.stringify(p.blocks), status: 'published' },
-    });
-  }
-  console.log(`✔ ${C.allPages.length} pages`);
-
-  for (const p of C.posts) {
-    await prisma.post.create({ data: { ...p, publishedAt: new Date(p.publishedAt), author: 'Admin', status: 'published' } });
-  }
-  console.log(`✔ ${C.posts.length} blog posts`);
-
-  for (const s of [...C.serviceRecords, ...C.additionalServices]) await prisma.service.create({ data: s });
-  console.log(`✔ ${C.serviceRecords.length + C.additionalServices.length} services`);
-
-  for (const f of faqs) await prisma.faq.create({ data: { ...f, active: true } });
-  console.log(`✔ ${faqs.length} FAQs`);
-
-  for (const p of C.partnerRecords) await prisma.partner.create({ data: p });
-  console.log(`✔ ${C.partnerRecords.length} partner logos (names — upload logo images in Admin → Partner logos)`);
-
-  if ((await prisma.testimonial.count()) === 0) {
-    for (const t of C.testimonialPlaceholders) await prisma.testimonial.create({ data: t });
-    console.log('✔ 3 sample testimonials (hidden — replace with real reviews)');
-  }
-  if (force) await prisma.setting.deleteMany({ where: { key: 'upgrade:service-pages-v1' } });
-  await servicePages();
 }
 
 /* One page per service (/services/<slug>) + service cards linked to them. Runs once per website. */

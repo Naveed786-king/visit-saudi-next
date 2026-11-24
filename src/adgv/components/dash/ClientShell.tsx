@@ -23,7 +23,7 @@ export function ClientShell({ area, active, title, children, back, updates = 0 }
     <div className="cs">
       <input type="checkbox" id="cs-nav" className="cs-tg" aria-hidden="true" tabIndex={-1} autoComplete="off" suppressHydrationWarning />
       <aside className="cs-side" aria-label={t.menu}>
-        <a className="cs-logo" href={`${base}/`}><img src={fullLogo()} alt="Abu Dhabi Golden Visa" /></a>
+        <a className="cs-logo" href={`${base}/`}><img src={fullLogo()} alt="Visit Saudi" /></a>
         <a className="btn btn-gold cs-new cs-new-app" href={`${base}/apply/`}><Icon name="plus" size={16} /> {t.newApp ?? 'New application'}</a>
         <nav>
           <p>{t.gTrack}</p>

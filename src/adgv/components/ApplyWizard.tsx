@@ -11,7 +11,7 @@ export type ApplyService = { id: string; label: string; group: string; note?: st
 
 type Member = { relation: 'Spouse' | 'Child' | 'Parent'; name: string; adult: boolean };
 const STEPS = ['Service', 'Your details', 'Family', 'Documents', 'Review & submit'];
-const GROUP_ICON: Record<string, string> = { 'Golden Visa': 'star', 'Family & residency': 'family', Visas: 'plane', Employment: 'briefcase', 'Employment visas & permits': 'briefcase', 'Property & documents': 'home', 'Visa services': 'shield', 'Attestation & legalisation': 'doc', 'Property & business': 'home', 'Other services': 'globe', 'Wills & estate planning': 'heart' };
+const GROUP_ICON: Record<string, string> = { 'Saudi visit visas': 'plane', 'Umrah & Hajj': 'star', 'Golden Visa': 'star', 'Family & residency': 'family', Visas: 'plane', Employment: 'briefcase', 'Employment visas & permits': 'briefcase', 'Property & documents': 'home', 'Visa services': 'shield', 'Attestation & legalisation': 'doc', 'Property & business': 'home', 'Other services': 'globe', 'Wills & estate planning': 'heart' };
 const MAX = 15 * 1024 * 1024;
 const SVC_ICON: Record<string, string> = {
   'gv-property': 'home', 'gv-investor': 'briefcase', 'gv-entrepreneur': 'rocket', 'gv-professional': 'user', 'gv-talent': 'spark', 'gv-student': 'cap', 'gv-other': 'heart', 'golden-visa': 'star',
