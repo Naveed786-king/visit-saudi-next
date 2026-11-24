@@ -60,10 +60,10 @@ const NAV = [
   {
     group: 'Website',
     items: [
-      { href: '/admin/site-pages', label: 'Pages & styling', icon: Palette, adminOnly: true },
-      { href: '/admin/site-texts', label: 'Website texts', icon: Languages, adminOnly: true },
-      { href: '/admin/guides', label: 'Guides', icon: Newspaper, adminOnly: true },
-      { href: '/admin/news', label: 'News posts', icon: FileText, adminOnly: true },
+      { href: '/admin/site-pages', label: 'Pages', icon: FileText, adminOnly: true },
+      { href: '/admin/site-posts', label: 'Posts & guides', icon: Newspaper, adminOnly: true },
+      { href: '/admin/site-texts', label: 'Translations', icon: Languages, adminOnly: true },
+      { href: '/admin/site-styling', label: 'Page styling', icon: Palette, adminOnly: true },
       { href: '/admin/reviews', label: 'Reviews', icon: MessageSquareQuote, adminOnly: true },
       { href: '/admin/prices', label: 'Visa prices & pay online', icon: BadgeCheck, adminOnly: true },
       { href: '/admin/media', label: 'Media library', icon: ImageIcon },

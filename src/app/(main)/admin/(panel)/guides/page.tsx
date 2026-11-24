@@ -1,5 +1,6 @@
-import { GuidesAdmin } from '@/components/admin/VsAdmin';
+import { redirect } from 'next/navigation';
 
+// guides and news posts are managed together in Posts & guides
 export default function Page() {
-  return <GuidesAdmin />;
+  redirect('/admin/site-posts');
 }

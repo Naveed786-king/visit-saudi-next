@@ -79,7 +79,7 @@ export function SitePagesAdmin() {
   return (
     <div>
       <PageTitle
-        title="Pages & styling"
+        title="Page styling"
         subtitle="The website looks exactly as designed until you change something here. Colours and fonts apply to every page in all 19 languages; extra CSS can target one page."
         actions={
           <Btn onClick={save} loading={saving}>

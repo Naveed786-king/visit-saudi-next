@@ -10,7 +10,11 @@ import { payReturn } from '@/lib/vs/pay';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const sources = { edits: editsFor, guides: () => getVs('vs.guides'), styling: stylingCss };
+async function extra() {
+  const [pages, posts, meta, html] = await Promise.all([getVs('vs.pages'), getVs('vs.posts'), getVs('vs.pageMeta'), getVs('vs.html')]);
+  return { pages, posts, meta, html };
+}
+const sources = { edits: editsFor, guides: () => getVs('vs.guides'), styling: stylingCss, extra };
 
 async function handle(req: Request) {
   const url = new URL(req.url);
@@ -23,6 +27,16 @@ async function handle(req: Request) {
   if (im) {
     const fp = path.join(I18N_DIR, im[1] + '.json');
     if (!fs.existsSync(fp)) return new Response(JSON.stringify({ ok: false }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+    // texts changed or added in Admin → Translations also reach the texts the site's script shows
+    const ed = await editsFor(im[1]);
+    if (Object.keys(ed).length) {
+      try {
+        const merged = { ...JSON.parse(fs.readFileSync(fp, 'utf8')), ...ed };
+        return new Response(JSON.stringify(merged), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+      } catch {
+        /* unreadable file: serve as it is */
+      }
+    }
     return new Response(fs.readFileSync(fp), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } });
   }
   // pictures from Admin → Media library
@@ -42,7 +56,7 @@ async function handle(req: Request) {
       return new Response(new Uint8Array(body), { status: 200, headers: { 'Content-Type': r.mime, 'Cache-Control': r.cache } });
     }
     if (r.status === 200 && req.method === 'GET') logView(pathname).catch(() => {});
-    return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
+    return new Response(r.body, { status: r.status, headers: { 'Content-Type': r.mime || 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
   } catch (e) {
     console.error('[page]', pathname, (e as Error).message);
     return new Response(NOT_FOUND_HTML, { status: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' } });

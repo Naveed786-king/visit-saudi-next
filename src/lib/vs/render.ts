@@ -3,6 +3,8 @@
 // Only addition: the optional styling from Admin → Page styling, injected before </head> when the admin set something.
 import fs from 'fs';
 import path from 'path';
+import { htmlToRich, richToHtml } from './rich';
+import { buildHtmlPage, buildPost, buildSimplePage, emptyExtra, injectPostCards, setHead, sitemapXml, type SiteExtra } from './pages';
 
 export const SITE_ROOT = path.join(process.cwd(), 'site', 'public');
 export const I18N_DIR = path.join(process.cwd(), 'site', 'i18n');
@@ -12,7 +14,17 @@ const RTL: Record<string, 1> = { ar: 1, ur: 1 };
 export const NOT_FOUND_HTML = "<h1 style='font-family:sans-serif'>Page not found</h1><p><a href='/'>Visit Saudi - home</a></p>";
 
 export type Edits = Record<string, Record<string, string>>; // lang -> source text -> replacement
-export type GuideOverride = { title?: string; cat?: string; excerpt?: string; image?: string; body?: string; published?: boolean; updatedAt?: string };
+export type GuideOverride = {
+  title?: string;
+  cat?: string;
+  excerpt?: string;
+  image?: string;
+  body?: string;
+  published?: boolean;
+  updatedAt?: string;
+  /** translations of the changed guide (language -> fields) */
+  tr?: Record<string, { title?: string; cat?: string; excerpt?: string; body?: string; manual?: boolean; at?: string }>;
+};
 export type Styling = { css: string; pages: Record<string, string> }; // css for every page, extra css per clean path
 
 const mapCache: Record<string, { mtime: number; map: Record<string, string> }> = {};
@@ -30,22 +42,8 @@ export function loadLangMap(lang: string): Record<string, string> {
   }
 }
 
-export function escAttr(s: string) {
-  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-export function escText(s: string) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-const ENT: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", copy: '©', nbsp: ' ', rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”', hellip: '…', mdash: '—', ndash: '–' };
-export function decEnt(s: string) {
-  return String(s).replace(/&(#x?[0-9a-fA-F]+|amp|lt|gt|quot|apos|copy|nbsp|rsquo|lsquo|ldquo|rdquo|hellip|mdash|ndash);/g, (m, e: string) => {
-    if (e[0] === '#') {
-      const n = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
-      return isNaN(n) ? m : String.fromCodePoint(n);
-    }
-    return ENT[e] || m;
-  });
-}
+export { escAttr, escText, decEnt } from './esc';
+import { escAttr, escText, decEnt } from './esc';
 
 const TOKEN_RE = /(<!--[\s\S]*?-->|<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<[^>]+>)/g;
 
@@ -103,30 +101,19 @@ export function guideZone(html: string) {
   if (b < 0) return null;
   return { a, b };
 }
+/** the guide's article text in the editor format (sections, lists, pictures, FAQ) */
 export function zoneToText(zone: string) {
-  const out: string[] = [];
-  const re = /<(h2|h3|p|li)[^>]*>([\s\S]*?)<\/\1>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(zone))) {
-    const t = decEnt(m[2].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-    if (!t) continue;
-    out.push(m[1] === 'h2' ? '## ' + t : m[1] === 'h3' ? '### ' + t : t);
-  }
-  return out.join('\n\n');
+  return htmlToRich(zone);
 }
+/** editor text back to the guide's HTML */
 export function textToZone(text: string) {
-  let sec = 0;
-  return String(text || '')
-    .split(/\n\s*\n/)
-    .map((block) => {
-      const t = block.trim();
-      if (!t) return '';
-      if (t.indexOf('## ') === 0) return '<h2 id="sec-' + sec++ + '">' + escText(t.slice(3)) + '</h2>';
-      if (t.indexOf('### ') === 0) return '<h3>' + escText(t.slice(4)) + '</h3>';
-      return '<p>' + escText(t).replace(/\n/g, '<br>') + '</p>';
-    })
-    .filter(Boolean)
-    .join('\n');
+  return richToHtml(text);
+}
+/** the override fields in one language (the English change when that language has no translation yet) */
+export function guideIn(ov: GuideOverride, lang: string | null): GuideOverride {
+  const t = lang ? ov.tr?.[lang] : undefined;
+  if (!t) return ov;
+  return { ...ov, title: t.title || ov.title, cat: t.cat || ov.cat, excerpt: t.excerpt || ov.excerpt, body: t.body || ov.body };
 }
 export function applyGuideOverride(html: string, ov: GuideOverride) {
   if (ov.title) {
@@ -216,7 +203,7 @@ export function applyStyling(html: string, cleanPath: string, s?: Styling | null
 }
 
 export type PageResult =
-  | { kind: 'html'; status: number; body: string }
+  | { kind: 'html'; status: number; body: string; mime?: string }
   | { kind: 'redirect'; status: number; location: string }
   | { kind: 'file'; status: number; path: string; mime: string; cache: string };
 
@@ -230,6 +217,8 @@ export type RenderSources = {
   edits: (lang: string) => Promise<Record<string, string>>;
   guides: () => Promise<Record<string, GuideOverride>>;
   styling: () => Promise<Styling | null>;
+  /** pages and posts added or changed in the admin */
+  extra?: () => Promise<SiteExtra>;
 };
 
 /** Resolves a request path exactly like the old server.js (language prefix, /blog → /guides, .html → clean URL, 404) */
@@ -250,34 +239,71 @@ export async function renderPage(pathname: string, search: string, src: RenderSo
     else if (clean.endsWith('/index')) clean = clean.slice(0, -5);
     return { kind: 'redirect', status: 301, location: (reqLang ? '/' + reqLang : '') + clean + (search || '') };
   }
-  let rel = p === '/' ? '/index.html' : p;
-  if (rel === '/admin.html' || rel === '/admin') return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
-  if (!path.extname(rel)) rel = rel + '.html';
-  let fp: string;
-  try {
-    fp = path.join(SITE_ROOT, decodeURIComponent(rel));
-  } catch {
-    return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
+  const ex: SiteExtra = src.extra ? await src.extra() : { pages: [], posts: [], meta: {}, html: {} };
+  const changed = !emptyExtra(ex);
+  // old links of news posts (/blog-post?slug=...) open the post
+  if (p === '/blog-post' && changed) {
+    const slug = new URLSearchParams(search || '').get('slug') || '';
+    if (ex.posts.some((x) => x.slug === slug && x.published)) return { kind: 'redirect', status: 301, location: (reqLang ? '/' + reqLang : '') + '/guides/' + slug };
   }
-  if (!fp.startsWith(SITE_ROOT + path.sep) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory() || fp.endsWith('admin.html')) {
-    return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
+  if (changed && ex.meta[p]?.hidden) return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
+  const govs = await src.guides();
+  if (p === '/sitemap.xml' && (changed || Object.values(govs).some((g) => g.published === false))) {
+    const xml = sitemapXml(fs.readFileSync(path.join(SITE_ROOT, 'sitemap.xml'), 'utf8'), ex, Object.keys(govs).filter((k) => govs[k].published === false));
+    return { kind: 'html', status: 200, body: xml, mime: 'application/xml' };
   }
-  if (!fp.endsWith('.html')) {
-    return { kind: 'file', status: 200, path: fp, mime: MIME[path.extname(fp).toLowerCase()] || 'application/octet-stream', cache: 'public, max-age=86400' };
+  // a page or post made in the admin
+  let html: string | null = null;
+  let own = false; // texts already in the visitor's language
+  if (changed) {
+    const cp = ex.pages.find((x) => '/' + x.slug === p && x.published);
+    const gm = p.match(/^\/guides\/([a-z0-9-]+)$/);
+    const post = gm ? ex.posts.find((x) => x.slug === gm[1] && x.published) : undefined;
+    if (cp) {
+      html = cp.mode === 'html' ? buildHtmlPage(cp) : buildSimplePage(cp, reqLang);
+      own = cp.mode !== 'html';
+    } else if (post) {
+      html = buildPost(post, reqLang);
+      own = true;
+    } else if (ex.html[p]) html = ex.html[p];
+  }
+  if (html === null) {
+    let rel = p === '/' ? '/index.html' : p;
+    if (rel === '/admin.html' || rel === '/admin') return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
+    if (!path.extname(rel)) rel = rel + '.html';
+    let fp: string;
+    try {
+      fp = path.join(SITE_ROOT, decodeURIComponent(rel));
+    } catch {
+      return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
+    }
+    if (!fp.startsWith(SITE_ROOT + path.sep) || !fs.existsSync(fp) || fs.statSync(fp).isDirectory() || fp.endsWith('admin.html')) {
+      return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
+    }
+    if (!fp.endsWith('.html')) {
+      return { kind: 'file', status: 200, path: fp, mime: MIME[path.extname(fp).toLowerCase()] || 'application/octet-stream', cache: 'public, max-age=86400' };
+    }
+    html = fs.readFileSync(fp, 'utf8');
   }
   const styling = await src.styling();
-  let html = fs.readFileSync(fp, 'utf8');
-  const govs = await src.guides();
+  let page: string = html as string;
   if (Object.keys(govs).length) {
     const gm = p.match(/^\/guides\/([a-z0-9-]+)$/);
-    if (gm && govs[gm[1]]) {
+    if (gm && govs[gm[1]] && !own) {
       if (govs[gm[1]].published === false) return { kind: 'html', status: 404, body: NOT_FOUND_HTML };
-      html = applyGuideOverride(html, govs[gm[1]]);
+      page = applyGuideOverride(page, guideIn(govs[gm[1]], reqLang));
     } else if (p === '/guides') {
-      html = applyIndexOverrides(html, govs);
+      const tr: Record<string, GuideOverride> = {};
+      for (const k of Object.keys(govs)) tr[k] = guideIn(govs[k], reqLang);
+      page = applyIndexOverrides(page, tr);
     }
   }
-  if (reqLang) html = translateHtml(html, reqLang, p, await src.edits(reqLang));
-  else html = applyEditsEn(html, await src.edits('en'));
-  return { kind: 'html', status: 200, body: applyStyling(html, p, styling) };
+  if (changed) {
+    if (p === '/guides') page = injectPostCards(page, ex.posts.filter((x) => x.published), reqLang);
+    const m = ex.meta[p];
+    if (m && (m.title || m.description)) page = setHead(page, { title: m.title || undefined, description: m.description || undefined });
+  }
+  if (reqLang) page = translateHtml(page, reqLang, p, await src.edits(reqLang));
+  else page = applyEditsEn(page, await src.edits('en'));
+  return { kind: 'html', status: 200, body: applyStyling(page, p, styling) };
 }

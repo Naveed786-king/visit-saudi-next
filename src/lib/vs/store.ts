@@ -12,6 +12,27 @@ export type VsSite = {
   payments: { enabled: boolean; provider: string };
 };
 export type VsBlogPost = { slug: string; title: string; cat: string; excerpt: string; body: string; image: string; date: string; published: boolean };
+/** Translation of a page or post into one language; manual = changed by hand (not replaced by "translate again") */
+export type VsTr = { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string; manual?: boolean; at?: string };
+/** A post added in the admin (shown with the guides, own page /guides/<slug>) */
+export type VsPost = { slug: string; title: string; cat: string; excerpt: string; image: string; body: string; date: string; published: boolean; updatedAt?: string; tr?: Record<string, VsTr> };
+/** A page added in the admin: "simple" = written in the editor, "html" = a full page (e.g. a copy of an existing page) */
+export type VsPage = {
+  slug: string;
+  mode: 'simple' | 'html';
+  title: string;
+  subtitle: string;
+  crumb: string;
+  description: string;
+  image: string;
+  body: string;
+  html?: string;
+  published: boolean;
+  updatedAt?: string;
+  tr?: Record<string, VsTr>;
+};
+/** The website's own pages: hidden (deleted from the website), or a new browser title / Google description */
+export type VsPageMeta = { hidden?: boolean; title?: string; description?: string };
 export type VsReview = { name: string; country: string; visa: string; rating: number; text: string; date: string; visible: boolean };
 
 export const DEFAULT_PRICES: Record<string, VsPrice> = {
@@ -49,6 +70,11 @@ type Stores = {
   'vs.blog': VsBlogPost[];
   'vs.reviews': VsReview[];
   'vs.customerNotes': Record<string, string>;
+  'vs.posts': VsPost[];
+  'vs.pages': VsPage[];
+  'vs.pageMeta': Record<string, VsPageMeta>;
+  /** full HTML of a website page changed in Admin → Pages → HTML (path -> html) */
+  'vs.html': Record<string, string>;
 };
 const DEFAULTS: Stores = {
   'vs.site': DEFAULT_VS_SITE,
@@ -58,6 +84,10 @@ const DEFAULTS: Stores = {
   'vs.blog': [],
   'vs.reviews': [],
   'vs.customerNotes': {},
+  'vs.posts': [],
+  'vs.pages': [],
+  'vs.pageMeta': {},
+  'vs.html': {},
 };
 
 const cache = new Map<string, { at: number; v: unknown }>();
@@ -66,7 +96,7 @@ const TTL = 5_000;
 export async function getVs<K extends keyof Stores>(key: K): Promise<Stores[K]> {
   const c = cache.get(key);
   if (c && Date.now() - c.at < TTL) return c.v as Stores[K];
-  let v: Stores[K] = DEFAULTS[key];
+  let v: Stores[K] = structuredClone(DEFAULTS[key]);
   try {
     const row = await prisma.setting.findUnique({ where: { key } });
     if (row) {

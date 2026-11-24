@@ -52,8 +52,8 @@ export default async function Dashboard() {
             <p className="mt-1 text-sm text-white/60">Here is what is happening with your website today.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/site-pages" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><FileText className="h-4 w-4" /> Pages & styling</Link>
-            <Link href="/admin/site-texts" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><PanelTop className="h-4 w-4" /> Website texts</Link>
+            <Link href="/admin/site-pages" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><FileText className="h-4 w-4" /> Pages</Link>
+            <Link href="/admin/site-texts" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><PanelTop className="h-4 w-4" /> Translations</Link>
             <Link href="/admin/settings" className="inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-ink hover:brightness-105"><Settings className="h-4 w-4" /> Settings</Link>
           </div>
         </div>

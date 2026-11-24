@@ -79,7 +79,7 @@ jobs:
           curl -sf -c cookies.txt -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@example.com","password":"CiPassword123","admin":true}' >/dev/null
           curl -sf -b cookies.txt "http://localhost:3000/admin/applications" | grep -q "$ref"
           curl -sf -b cookies.txt http://localhost:3000/api/admin/leads | grep -q "CI Test"
-          for pth in /admin /admin/applications /admin/applications/new /admin/steps /admin/payments /admin/whatsapp /admin/documents /admin/site-pages /admin/site-texts /admin/guides /admin/news /admin/reviews /admin/prices /admin/site-stats /admin/media /admin/settings; do code=$(curl -s -o /dev/null -w "%{http_code}" -b cookies.txt http://localhost:3000$pth); echo "$pth -> $code"; [ "$code" = "200" ]; done
+          for pth in /admin /admin/applications /admin/applications/new /admin/steps /admin/payments /admin/whatsapp /admin/documents /admin/site-pages /admin/site-texts /admin/site-posts /admin/site-styling /admin/reviews /admin/prices /admin/site-stats /admin/media /admin/settings; do code=$(curl -s -o /dev/null -w "%{http_code}" -b cookies.txt http://localhost:3000$pth); echo "$pth -> $code"; [ "$code" = "200" ]; done
           for a in site styling pages blog reviews stats guides; do curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs/$a" >/dev/null || { echo "::error title=Check failed::admin vs $a"; exit 1; }; done
           curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs/texts?lang=ar&q=visa" | grep -q '"strings"'
           # styling: nothing on the pages until set; then a change shows up, and is removed again
@@ -99,6 +99,8 @@ jobs:
           echo "app id: $app_id"
           [ -n "$app_id" ] && curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs-file/$app_id" | grep -q '"website":true'
           check /does-not-exist 404
+      - name: Pages, posts and translations (add, change, hide, delete - and back)
+        run: bash scripts/ci/content-tests.sh
       - name: Pages still identical after the admin tests
         run: sleep 6 && node scripts/ci/compare-pages.mjs http://localhost:3000 http://localhost:8324
       - name: Server log

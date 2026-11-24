@@ -117,7 +117,7 @@ async function claudeCall(apiKey: string, model: string, system: string, content
   return (d.content || []).map((c: any) => c.text || '').join('');
 }
 const SYS = (lang: string) =>
-  `You are a professional translator for a UAE Golden Visa consultancy website. Translate from English to ${lang}. Keep brand names (RAK Golden Visa, Brightlink, ICP, Emirates ID, Oqood, AED amounts, phone numbers, emails, URLs) unchanged. Use natural, formal, persuasive language as a native speaker would write it - never word-for-word. Use the standard script and conventions of the language (e.g. Modern Standard Arabic, Simplified Chinese, Devanagari Hindi, Urdu in Nastaliq/Arabic script, Romanian diacritics ș ț; for German (Austria) use Austrian vocabulary such as Jänner, Kundmachung).`;
+  `You are a professional translator for the website of Visit Saudi (visit-saudi.ae), a Dubai-based service that helps travellers apply for Saudi visas (tourist eVisa, Umrah, family, business and transit visas). Translate from English to ${lang}. Keep brand and official names (Visit Saudi, visit-saudi.ae, KSA Visa, Nusuk, Saudia, flynas, AlUla, Hegra, SAR/USD/AED amounts, phone numbers, emails, URLs) unchanged. Keep markers such as **, [text](link), "## " and "Q:"/"A:" exactly where they are. Use natural, clear, friendly-professional language as a native speaker would write it - never word-for-word. Use the standard script and conventions of the language (e.g. Modern Standard Arabic, Simplified Chinese, Devanagari Hindi, Urdu in Nastaliq/Arabic script, Romanian diacritics ș ț).`;
 
 async function claudeMany(texts: string[], locale: string, apiKey: string, model: string) {
   const lang = localeInfo(locale).name;
@@ -369,6 +369,6 @@ export async function translateHtml(html: string, locale: string, opts: TrOpts =
 export async function testTranslation(locale = 'ar') {
   const why = notReadyReason(await translationConfig());
   if (why) throw new Error(why);
-  const [out] = await translateTexts(['Apply for your Golden Visa today'], locale);
+  const [out] = await translateTexts(['Apply for your Saudi visa today'], locale);
   return out;
 }

@@ -1,5 +1,5 @@
-import { SiteTextsAdmin } from '@/components/admin/VsAdmin';
+import { TranslationsAdmin } from '@/components/admin/VsContent';
 
 export default function Page() {
-  return <SiteTextsAdmin />;
+  return <TranslationsAdmin />;
 }
