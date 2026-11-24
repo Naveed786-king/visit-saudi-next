@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Admin → Pages, Posts & guides, Translations: add / change / hide / delete, then everything back as it was.
 # Runs after the smoke test (logged-in admin in cookies.txt). The page comparison afterwards proves nothing is left behind.
-set -euo pipefail
+set -eu  # (no pipefail: "curl | grep -q" stops reading early on big pages)
 B=http://localhost:3000
 A="$B/api/admin/vs-content"
 post() { curl -sf -b cookies.txt -X POST "$A/$1" -H 'Content-Type: application/json' -d "$2"; }
