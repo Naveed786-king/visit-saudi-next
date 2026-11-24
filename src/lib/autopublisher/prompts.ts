@@ -1,8 +1,11 @@
 // System prompts and the company facts the writer may use. These decide article quality.
 import { prisma } from '@/lib/db';
 import { AutoConfig } from './config';
+import { getVs } from '@/lib/vs/store';
+import { listBuiltGuides } from '@/lib/vs/render';
+import { VISA_LABELS } from '@/lib/vs/apps';
 
-const SITE = 'RAK Golden Visa (rakgoldenvisa.com), run by Brightlink Management Consultancy L.L.C, United Arab Emirates';
+const SITE = 'Visit Saudi (visit-saudi.ae), a Dubai-based Saudi visa assistance service operated by Brightlink Management Consultancy LLC';
 
 export function monthYear(d = new Date()) {
   return d.toLocaleString('en-GB', { month: 'long', year: 'numeric', timeZone: 'Asia/Dubai' });
@@ -13,12 +16,17 @@ export async function companyFacts(cfg: AutoConfig) {
   const k = cfg.knowledge;
   const services = await prisma.service.findMany({ where: { active: true }, orderBy: { order: 'asc' }, select: { title: true, subtitle: true, slug: true, link: true } }).catch(() => []);
   // our published prices (Admin → Services & prices)
-  const priced = await prisma.service.findMany({ where: { active: true, NOT: { price: null } }, orderBy: { order: 'asc' }, select: { title: true, price: true } }).catch(() => []);
-  const fees = priced.filter((p) => p.price && p.price.trim()).slice(0, 60).map((p) => `${p.title}: ${p.price}`).join('\n');
+  // our published totals (Admin → Visa prices & pay online)
+  const site = await getVs('vs.site').catch(() => null);
+  const fees = Object.entries(site?.prices || {})
+    .filter(([, v]) => v && Number(v.amount) > 0)
+    .map(([k, v]) => `${VISA_LABELS[k] || k}: ${v.currency} ${v.amount} full total (official Saudi fee incl. medical insurance + our service fee)`)
+    .join('\n');
   const faqs = await prisma.faq.findMany({ where: { active: true }, select: { question: true } }).catch(() => []);
   const block = [
+    `CONTACT: WhatsApp +${String(site?.whatsapp || '971566556645').replace(/\D/g, '')}, email ${site?.email || 'info@visit-saudi.ae'}`,
     k.about && `ABOUT US:\n${k.about}`,
-    `SERVICES WE OFFER (link to them, never compete with them):\n${services.map((s) => `- ${s.title}${s.subtitle ? ` — ${s.subtitle}` : ''} (${s.link && s.link.startsWith('/') ? s.link : s.slug ? `/services/${s.slug}` : '/services'})`).join('\n')}${k.services ? `\n${k.services}` : ''}`,
+    `SERVICES WE OFFER (link to them, never compete with them):\n${services.map((s) => `- ${s.title}${s.subtitle ? ` — ${s.subtitle}` : ''} (${s.link && s.link.startsWith('/') ? s.link : s.slug ? `/visa/${s.slug}` : '/visa-types'})`).join('\n')}${k.services ? `\n${k.services}` : ''}`,
     (k.prices || fees) && `REAL PRICES AND FEES (only these numbers may be used for our prices):\n${[k.prices, fees].filter(Boolean).join('\n')}`,
     k.timelines && `REAL TIMELINES:\n${k.timelines}`,
     k.cases && `REAL ANONYMISED CASES (may be used as examples, never embellished):\n${k.cases}`,
@@ -33,25 +41,36 @@ export async function companyFacts(cfg: AutoConfig) {
 
 /** Pages and posts the article may link to */
 export async function linkTargets(topicTerms: string[]) {
-  const posts = await prisma.post.findMany({ where: { status: 'published' }, select: { slug: true, title: true } }).catch(() => []);
+  const auto = await prisma.post.findMany({ where: { status: 'published' }, select: { slug: true, title: true } }).catch(() => []);
+  const own = await getVs('vs.posts').catch(() => []);
+  const govs = await getVs('vs.guides').catch(() => ({}) as Record<string, any>);
+  const guides = listBuiltGuides().filter((g) => (govs as any)[g.slug]?.published !== false);
+  const posts = [...guides.map((g) => ({ slug: g.slug, title: g.title })), ...own.filter((p) => p.published).map((p) => ({ slug: p.slug, title: p.title })), ...auto];
   const score = (t: string) => topicTerms.filter((w) => t.toLowerCase().includes(w)).length;
   const related = posts
     .map((p) => ({ ...p, s: score(p.title) }))
     .filter((p) => p.s > 0)
     .sort((a, b) => b.s - a.s)
     .slice(0, 8)
-    .map((p) => ({ href: `/${p.slug}`, title: p.title }));
+    .map((p) => ({ href: `/guides/${p.slug}`, title: p.title }));
   const fixed = [
-    { href: '/services', title: 'Our services' },
+    { href: '/visa-types', title: 'All Saudi visa types' },
+    { href: '/eligibility', title: 'Eligibility checker (which visa fits your passport)' },
     { href: '/apply', title: 'Apply online' },
-    { href: '/latest-news-blogs', title: 'Latest news and guides' },
-    { href: '/contact-us', title: 'Talk to a consultant' },
+    { href: '/track', title: 'Track an application' },
+    { href: '/uae-residents', title: 'Saudi visa for UAE residents' },
+    { href: '/visa/tourist', title: 'Tourist eVisa' },
+    { href: '/visa/umrah', title: 'Umrah visa' },
+    { href: '/visa/family', title: 'Family visit visa' },
+    { href: '/visa/business', title: 'Business visit visa' },
+    { href: '/guides', title: 'Saudi visa and travel guides' },
+    { href: '/contact', title: 'Talk to a specialist' },
   ];
   return { related, fixed };
 }
 
-export const HUMAN_VOICE = `HUMAN VOICE (the reader must feel one of our consultants wrote this, not a machine)
-- Write the way our consultant explains it to a client across the desk in Ras Al Khaimah: "we" for us, "you" for the reader, contractions (you'll, it's, don't), plain everyday words.
+export const HUMAN_VOICE = `HUMAN VOICE (the reader must feel one of our visa specialists wrote this, not a machine)
+- Write the way our visa specialist explains it to a client across the desk in our Dubai office: "we" for us, "you" for the reader, contractions (you'll, it's, don't), plain everyday words.
 - Uneven rhythm on purpose: some sentences of 4-7 words, some of 25+. Paragraphs of 1 to 4 sentences, not all the same. Not every section needs a list.
 - Lead with the answer, then the detail. No warm-up lines ("In today's...", "Let's dive in", "Here's what you need to know", "Are you dreaming of...").
 - Be concrete: name the actual document, office, portal or step, the order things happen in, and where files usually get stuck (only from COMPANY FACTS, research or well-known public rules).
@@ -75,7 +94,7 @@ ACCURACY (non-negotiable)
 - Facts about our company, prices, timelines and cases come ONLY from COMPANY FACTS. If something is not there, stay general.
 - Government rules: describe carefully, say "as of ${monthYear()}" and advise checking the latest rules where they change.
 - Never invent numbers, statistics, approval rates, reviews, testimonials, quotes, awards or licence numbers.
-- Never guarantee or promise visa approval — the UAE authorities decide.
+- Never guarantee or promise visa approval — the Saudi authorities decide. We are a private service, not a government authority.
 - Never mention competitors. No external links — internal links only (relative URLs from the list provided).`;
 
 const ARTICLE_JSON = `Return JSON only, exactly this shape:
@@ -90,7 +109,7 @@ const ARTICLE_JSON = `Return JSON only, exactly this shape:
 }`;
 
 export function briefPrompt(cfg: AutoConfig, ctx: any) {
-  const system = `You are a senior content strategist for ${SITE}, a UAE Golden Visa and residency consultancy.
+  const system = `You are a senior content strategist for ${SITE}, helping travellers, families, pilgrims and business visitors get the right Saudi visa.
 You plan articles that outrank generic pages because they are more useful, more specific and more trustworthy.
 ${STYLE(cfg)}`;
   const prompt = `Plan one article.
@@ -127,7 +146,7 @@ Return JSON only:
 }
 
 export function writePrompt(cfg: AutoConfig, ctx: any) {
-  const system = `You are an expert writer who has personally handled hundreds of UAE visa files for ${SITE}.
+  const system = `You are an expert writer who has personally handled hundreds of Saudi visa applications for ${SITE}.
 You write deep, original, human articles from a brief. Length comes from useful substance, never padding.
 ${STYLE(cfg)}
 HTML: use <h2>/<h3>, <p>, <ul>/<ol>, <table> (with <thead>), <blockquote> sparingly, and <a href="/…"> for internal links (at least 3).`;
@@ -151,7 +170,7 @@ export function editPrompt(cfg: AutoConfig, ctx: any) {
   const system = `You are a strict senior human editor at ${SITE}. You turn a draft into an article a careful expert would be proud to sign.
 ${STYLE(cfg)}`;
   const prompt = `Edit this article. Do all of this:
-1. Make it read like our consultant wrote it (see HUMAN VOICE): remove every cliché, banned phrase, machine-sounding word, em dash, "not X but Y" contrast, habit triad and restating closer. Vary sentence and paragraph length. Keep all facts.
+1. Make it read like our visa specialist wrote it (see HUMAN VOICE): remove every cliché, banned phrase, machine-sounding word, em dash, "not X but Y" contrast, habit triad and restating closer. Vary sentence and paragraph length. Keep all facts.
 2. Add concrete examples and specific numbers ONLY if they appear in RESEARCH or COMPANY FACTS below.
 3. List every claim that is not supported by RESEARCH, COMPANY FACTS or well-known public rules, then remove or soften it.
 4. Keep the HTML conventions and all internal links (fix any that are not in the allowed list).
@@ -187,7 +206,7 @@ ${ARTICLE_JSON}`;
 
 /** Native rewrite: adapts (not translates word for word) an article for readers in one language/market */
 export function nativePrompt(cfg: AutoConfig, article: any, locale: { code: string; name: string }) {
-  const system = `You are a native ${locale.name} editor and UAE visa expert at ${SITE}. You adapt articles for ${locale.name}-speaking readers so they read as if written in ${locale.name} from the start.
+  const system = `You are a native ${locale.name} editor and Saudi visa expert at ${SITE}. You adapt articles for ${locale.name}-speaking readers so they read as if written in ${locale.name} from the start.
 Rules: keep every fact, number, warning and internal link exactly; do not add new facts or numbers; never promise approval; natural, idiomatic ${locale.name}; keep the HTML structure (h2/h3/p/ul/ol/table/a, figures unchanged); no external links.`;
   const prompt = `Adapt this article into natural ${locale.name} (${locale.code}) for readers from ${locale.name}-speaking countries. Adapt examples and phrasing to them where useful, without changing facts.
 

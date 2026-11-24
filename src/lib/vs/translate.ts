@@ -3,7 +3,7 @@
 // Hand-made translations are kept unless the admin asks to translate again.
 import fs from 'fs';
 import path from 'path';
-import { translateTexts, translationConfig, notReadyReason } from '@/lib/i18n/translate';
+import { translateTexts, translationConfig, notReadyReason, translateHtml as translateHtmlPiece } from '@/lib/i18n/translate';
 import { getVs, saveVs, type VsTr } from './store';
 import { LANG_LIST, SITE_ROOT, loadLangMap, decEnt } from './render';
 import { pageTexts } from './pages';
@@ -23,7 +23,7 @@ async function tr(texts: string[], lang: string) {
 }
 
 /** title / excerpt / body ... of one item into one language */
-export async function translateFields(src: { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string }, lang: string): Promise<VsTr> {
+export async function translateFields(src: { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string; html?: string }, lang: string): Promise<VsTr> {
   const keys = (['title', 'subtitle', 'crumb', 'cat', 'excerpt', 'description'] as const).filter((k) => src[k] && String(src[k]).trim());
   const out: VsTr = {};
   if (keys.length) {
@@ -31,6 +31,11 @@ export async function translateFields(src: { title?: string; subtitle?: string; 
     keys.forEach((k, i) => (out[k] = t[i]));
   }
   if (src.body && src.body.trim()) out.body = await translateRich(src.body, (texts) => tr(texts, lang));
+  if (src.html && src.html.trim()) {
+    const why = await engineProblem();
+    if (why) throw new Error(why);
+    out.html = await translateHtmlPiece(src.html, lang);
+  }
   out.at = new Date().toISOString();
   return out;
 }

@@ -5,6 +5,7 @@
 import { prisma } from '@/lib/db';
 import { refreshSite } from '@/lib/api';
 import { postPath } from '@/lib/utils';
+import { mirrorAutoPost, mirrorSafe, takenPostSlugs } from '@/lib/vs/autopost';
 import { pingIndexNow } from '@/lib/indexnow';
 import { onContentSaved } from '@/lib/i18n/jobs';
 import { AutoConfig, getAutoConfig } from './config';
@@ -379,7 +380,7 @@ const write: Stage = async (job, d, cfg) => {
 
 const edit: Stage = async (job, d, cfg) => {
   const facts = await companyFacts(cfg);
-  const allowed = [...(d.links?.fixed || []), ...(d.links?.related || [])].map((l: any) => l.href).concat((facts.services || []).map((s: any) => `/services/${s.slug}`));
+  const allowed = [...(d.links?.fixed || []), ...(d.links?.related || [])].map((l: any) => l.href).concat((facts.services || []).map((s: any) => (s.link && s.link.startsWith("/") ? s.link : `/visa/${s.slug}`)));
   const research = [`Focus: ${d.focusKeyword}`, `Questions: ${(d.questions || []).join(' | ')}`, ...(d.news || []).map((n: any) => `${n.title} (${n.source}, ${n.date}): ${n.snippet}`)].join('\n');
   const { system, prompt } = editPrompt(cfg, { article: d.article, allowedLinks: allowed, research, facts: facts.text, notes: d.editorNotes });
   const r = await completeJson({ system, prompt, role: 'editor', temperature: 0.5, maxTokens: 16000, timeoutMs: 230_000 });
@@ -706,6 +707,7 @@ export async function restoreBackup(d: JobData) {
   const b = d.backup;
   if (!b || !d.targetPostId) throw new Error('No backup in this job');
   const post = await prisma.post.update({ where: { id: d.targetPostId }, data: { title: b.title, excerpt: b.excerpt, content: b.content, cover: b.cover, category: b.category, tags: b.tags, metaTitle: b.metaTitle, metaDescription: b.metaDescription, status: b.status } });
+  mirrorSafe(post);
   const cfg = await getAutoConfig();
   await fingerprintPost(post, undefined, cfg).catch((e) => autoLog('warn', `Fingerprint failed for /${post.slug}: ${e instanceof Error ? e.message : e}`));
   if (post.status === 'published') await afterPublish(post.id, post.slug);
@@ -749,9 +751,10 @@ async function nextSlot(cfg: AutoConfig): Promise<number> {
 
 async function uniqueSlug(base: string, keepId?: string) {
   let slug = base || `article-${Date.now()}`;
+  const taken = await takenPostSlugs(keepId);
   for (let i = 2; i < 50; i++) {
     const hit = await prisma.post.findUnique({ where: { slug } });
-    if (!hit || hit.id === keepId) return slug;
+    if ((!hit || hit.id === keepId) && !taken.has(slug)) return slug;
     slug = `${base}-${i}`;
   }
   return `${base}-${Date.now()}`;
@@ -770,7 +773,7 @@ export async function savePost(d: JobData, status: 'published' | 'draft', jobId?
     excerpt: String(a.excerpt || '').slice(0, 400),
     content: html,
     cover: d.cover || existing?.cover || null,
-    category: String(d.customCategory || a.category || existing?.category || 'Golden Visa').slice(0, 60),
+    category: String(d.customCategory || a.category || existing?.category || 'Saudi Visa').slice(0, 60),
     tags: tags.slice(0, 10).join(', '),
     metaTitle: String(a.seoTitle || a.title).slice(0, 70),
     metaDescription: String(a.metaDescription || '').slice(0, 170),
@@ -779,7 +782,9 @@ export async function savePost(d: JobData, status: 'published' | 'draft', jobId?
   const publishedAt = d.customDate ? new Date(`${d.customDate}T09:00:00+04:00`) : new Date();
   const post = existing
     ? await prisma.post.update({ where: { id: existing.id }, data: fields })
-    : await prisma.post.create({ data: { ...fields, slug, author: 'RAK Golden Visa', publishedAt } });
+    : await prisma.post.create({ data: { ...fields, slug, author: 'Visit Saudi', publishedAt } });
+  // the website shows it with the guides (Admin → Posts & guides)
+  await mirrorAutoPost(post).catch((e) => autoLog('warn', `Could not add /guides/${post.slug} to the website posts: ${e instanceof Error ? e.message : e}`, jobId));
   const cfg = await getAutoConfig();
   await fingerprintPost(post, a.focusKeyword || d.focusKeyword, cfg).catch((e) => autoLog('warn', `Fingerprint failed for /${post.slug}: ${e instanceof Error ? e.message : e}`, jobId));
   if (status === 'published') await afterPublish(post.id, post.slug);

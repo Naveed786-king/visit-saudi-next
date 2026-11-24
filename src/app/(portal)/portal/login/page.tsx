@@ -38,7 +38,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<Re
           <div className="full"><Submit className="btn">{t.openFile}</Submit></div>
         </ActionForm>
       </details>
-      <a className="btn btn-wa" style={{ marginTop: 18 }} href={waLink('Hello, I need help with my Golden Visa portal.')} target="_blank" rel="noopener">{t.needHelp}</a>
+      <a className="btn btn-wa" style={{ marginTop: 18 }} href={waLink('Hello, I need help with my Saudi visa account.')} target="_blank" rel="noopener">{t.needHelp}</a>
     </AuthShell>
   );
 }

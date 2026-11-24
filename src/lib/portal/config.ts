@@ -140,7 +140,7 @@ export type MailTemplate = { on: boolean; subject: string; body: string };
 
 /** One text per event: used for the email and (outside templates) for WhatsApp. "Label: value" lines show as a table. */
 export const defaultClientMail: { events: Record<NotifyEvent, MailTemplate>; signOff: string } = {
-  signOff: 'Kind regards,\nRAK Golden Visa',
+  signOff: 'Kind regards,\nVisit Saudi',
   events: {
     welcome: { on: true, subject: 'We received your application {ref}', body: 'Hello {name},\n\nThank you for choosing us. We have received your application and your advisor will review it shortly.\n\nReference: {ref}\nService: {service}\n\nFollow your application, upload documents and message your advisor here:\n{link}' },
     status: { on: true, subject: 'Update on your application {ref}: {status}', body: 'Hello {name},\n\nYour application has moved to a new step.\n\nReference: {ref}\nCurrent step: {status}\n\n{next}\n\nSee the details in your dashboard:\n{link}' },
@@ -186,10 +186,10 @@ export const defaultPdf: PdfSettings = {
   showCompany: false,
   company: '',
   accent: '#c19a3d',
-  quoteTitle: 'UAE Golden Visa quotation',
+  quoteTitle: 'Saudi visa quotation',
   receiptTitle: 'Payment receipt',
   intro: '',
-  notes: 'Government fees are set by the UAE authorities and can change. We confirm the final amount in writing before you pay. Visa approval is decided by the authorities only.',
+  notes: 'Government fees are set by the Saudi authorities and can change. We confirm the final amount in writing before you pay. Visa approval is decided by the authorities only.',
   footer: '',
   signName: '',
   signTitle: '',
@@ -277,7 +277,7 @@ export const VS_STEPS: StepDef[] = [
 export const defaultSteps: StepSettings = { golden: VS_STEPS, other: VS_STEPS };
 
 export type PortalSettings = {
-  /** address of the client dashboard, e.g. https://app.rakgoldenvisa.com — empty: the main site's /account */
+  /** address of the client dashboard, e.g. https://app.visit-saudi.ae — empty: the main site's /account */
   url: string;
   /** advisor shown to clients when a file has none */
   advisorName: string;

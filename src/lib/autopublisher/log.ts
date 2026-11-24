@@ -31,7 +31,7 @@ async function writeJson(key: string, value: any) {
   await prisma.setting.upsert({ where: { key }, update: { value: v }, create: { key, value: v } });
 }
 
-/** AI calls made today (UAE time) */
+/** AI calls made today (Dubai time) */
 export async function aiCallsToday(): Promise<number> {
   const s = await readJson('autopublisher:calls', { day: '', count: 0 });
   return s.day === dayKey() ? s.count : 0;

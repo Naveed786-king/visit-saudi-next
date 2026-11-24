@@ -4,16 +4,25 @@ import { deepMerge, maskSecrets, unmaskSecrets } from '@/lib/autopublisher/pure'
 import type { ProviderId } from '@/lib/autopublisher/config';
 
 export const GREETINGS: Record<string, string> = {
-  en: 'Hello 👋 Ask me anything about the RAK Golden Visa, family visas, costs or documents. How can I help?',
-  ar: 'مرحبًا! يمكنني الإجابة عن أسئلتك حول الإقامة الذهبية في الإمارات وتأشيرات العائلة والتكاليف والمستندات. كيف أساعدك؟',
-  ru: 'Здравствуйте! Я отвечу на вопросы о Золотой визе ОАЭ, семейных визах, стоимости и документах. Чем помочь?',
-  tr: 'Merhaba! BAE Altın Vizesi, aile vizeleri, maliyetler ve belgeler hakkındaki sorularınızı yanıtlayabilirim. Nasıl yardımcı olabilirim?',
-  zh: '您好！我可以解答有关阿联酋黄金签证、家庭签证、费用和文件的问题。有什么可以帮您？',
-  fr: 'Bonjour ! Je réponds à vos questions sur le Golden Visa des EAU, les visas familiaux, les coûts et les documents. Comment puis-je vous aider ?',
-  de: 'Hallo! Ich beantworte Fragen zum Golden Visa der VAE, zu Familienvisa, Kosten und Dokumenten. Wie kann ich helfen?',
-  es: '¡Hola! Respondo preguntas sobre la Golden Visa de EAU, visados familiares, costes y documentos. ¿En qué puedo ayudarle?',
-  ro: 'Bună! Răspund la întrebări despre Golden Visa în EAU, vize de familie, costuri și documente. Cu ce vă pot ajuta?',
-  hi: 'नमस्ते! मैं यूएई गोल्डन वीज़ा, फ़ैमिली वीज़ा, लागत और दस्तावेज़ों से जुड़े सवालों के जवाब दे सकता हूँ। मैं कैसे मदद करूँ?',
+  en: 'Assalamu alaikum 👋 I can help with Saudi visas: which visa fits your passport, documents, costs, Umrah and tracking. How can I help?',
+  ar: 'السلام عليكم 👋 يمكنني مساعدتك في تأشيرات السعودية: التأشيرة المناسبة لجوازك، المستندات، التكاليف، العمرة وتتبع الطلب. كيف أساعدك؟',
+  ru: 'Ассаляму алейкум 👋 Помогу с визами в Саудовскую Аравию: какая виза подходит вашему паспорту, документы, стоимость, умра и отслеживание. Чем помочь?',
+  de: 'Assalamu alaikum 👋 Ich helfe bei Saudi-Visa: welches Visum zu Ihrem Pass passt, Unterlagen, Kosten, Umrah und Statusverfolgung. Wie kann ich helfen?',
+  es: 'Assalamu alaikum 👋 Te ayudo con los visados de Arabia Saudí: qué visado corresponde a tu pasaporte, documentos, costes, Umrah y seguimiento. ¿En qué te ayudo?',
+  fr: 'Assalamu alaikum 👋 Je vous aide pour les visas saoudiens : quel visa pour votre passeport, documents, coûts, Omra et suivi. Comment puis-je vous aider ?',
+  tr: 'Esselamün aleyküm 👋 Suudi vizeleri konusunda yardımcı olurum: pasaportunuza uygun vize, belgeler, ücretler, Umre ve başvuru takibi. Nasıl yardımcı olabilirim?',
+  zh: '您好 👋 我可以帮您了解沙特签证：适合您护照的签证、所需材料、费用、副朝及申请进度查询。请问有什么可以帮您？',
+  ur: 'السلام علیکم 👋 میں سعودی ویزوں میں مدد کر سکتا ہوں: آپ کے پاسپورٹ کے لیے کون سا ویزا، دستاویزات، اخراجات، عمرہ اور درخواست کی ٹریکنگ۔ میں کیسے مدد کروں؟',
+  hi: 'अस्सलामु अलैकुम 👋 मैं सऊदी वीज़ा में मदद कर सकता हूँ: आपके पासपोर्ट के लिए सही वीज़ा, दस्तावेज़, खर्च, उमरा और आवेदन की ट्रैकिंग। मैं कैसे मदद करूँ?',
+  it: 'Assalamu alaikum 👋 Ti aiuto con i visti per l’Arabia Saudita: quale visto per il tuo passaporto, documenti, costi, Umrah e monitoraggio. Come posso aiutarti?',
+  ro: 'Assalamu alaikum 👋 Vă ajut cu vizele pentru Arabia Saudită: ce viză se potrivește pașaportului, acte, costuri, Umrah și urmărirea cererii. Cu ce vă pot ajuta?',
+  pt: 'Assalamu alaikum 👋 Ajudo com vistos para a Arábia Saudita: que visto serve ao seu passaporte, documentos, custos, Umrah e acompanhamento. Como posso ajudar?',
+  pl: 'Assalamu alaikum 👋 Pomogę w sprawie wiz do Arabii Saudyjskiej: jaka wiza dla Twojego paszportu, dokumenty, koszty, umra i śledzenie wniosku. W czym pomóc?',
+  hu: 'Assalamu alaikum 👋 Segítek a szaúdi vízumokkal: melyik vízum illik az útleveléhez, dokumentumok, költségek, umra és nyomon követés. Miben segíthetek?',
+  hr: 'Assalamu alaikum 👋 Pomažem oko saudijskih viza: koja viza odgovara vašoj putovnici, dokumenti, troškovi, umra i praćenje zahtjeva. Kako mogu pomoći?',
+  sk: 'Assalamu alaikum 👋 Pomôžem s vízami do Saudskej Arábie: aké vízum pre váš pas, doklady, náklady, umra a sledovanie žiadosti. Ako môžem pomôcť?',
+  cs: 'Assalamu alaikum 👋 Pomohu s vízy do Saúdské Arábie: jaké vízum pro váš pas, doklady, náklady, umra a sledování žádosti. Jak mohu pomoci?',
+  id: 'Assalamu alaikum 👋 Saya bisa membantu soal visa Arab Saudi: visa yang cocok untuk paspor Anda, dokumen, biaya, umrah, dan pelacakan permohonan. Ada yang bisa dibantu?',
 };
 
 export type ChatConfig = {
@@ -22,7 +31,7 @@ export type ChatConfig = {
   model: string;
   key: string; // own key; empty = use the Auto Publisher / environment key for this provider
   botName: string;
-  role: string; // shown under the name, e.g. "Golden Visa advisor"
+  role: string; // shown under the name, e.g. "Saudi visa advisor"
   avatar: string; // picture next to the chat; empty = built-in advisor picture
   greetings: Record<string, string>;
   color: string;
@@ -41,10 +50,10 @@ export const DEFAULT_CHAT: ChatConfig = {
   model: 'gemini-3.8-flash',
   key: '',
   botName: 'Sara',
-  role: 'Golden Visa advisor',
+  role: 'Saudi visa advisor',
   avatar: '',
   greetings: GREETINGS,
-  color: '#0a1222',
+  color: '#0a5c36',
   position: 'end',
   whatsapp: '',
   handover: { apply: true, quote: true, unknown: true, human: true, askContact: true },

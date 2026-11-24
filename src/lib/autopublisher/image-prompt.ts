@@ -3,18 +3,18 @@
 // Visa and residency themes only, people-free (AI pictures fail the realism check mostly on hands,
 // faces and anything with writing). Passports are always closed with a plain cover, cards are blank.
 const SCENES = [
-  'a closed navy-blue passport with a plain cover (no emblem, no writing) resting on a light marble desk beside a cup of Arabic coffee, a window with the Ras Al Khaimah skyline softly out of focus behind',
-  'a blank matte-gold card and a closed plain passport on a walnut desk in warm window light, the Jebel Jais mountains visible through the window',
-  'two hard-shell suitcases standing by a floor-to-ceiling window overlooking the Al Marjan Island towers at golden hour, an empty bright apartment',
-  'a passenger jet taking off over the Ras Al Khaimah skyline at sunset, the Jebel Jais mountains on the horizon',
+  'a closed navy-blue passport with a plain cover (no emblem, no writing) resting on a light marble desk beside a small cup of Arabic coffee and dates, a window with a Gulf city skyline softly out of focus behind',
+  'two hard-shell suitcases standing by a floor-to-ceiling window overlooking the Dubai Marina towers at golden hour, ready for a trip, an empty bright apartment',
+  'a passenger jet taking off over a desert city skyline at sunset, photographed from the ground',
   'a spacious modern airport terminal hall in soft daylight with high curved ceilings and palm trees, empty of people',
-  'a set of new house keys on a marble kitchen island in a bright Ras Al Khaimah villa, palm trees outside the window',
-  'a closed plain passport on top of a leather travel wallet beside a small model aeroplane on a light desk, soft daylight',
-  'the Ras Al Khaimah skyline with the Hajar mountains behind at blue hour seen across calm water, premium and calm',
-  'a quiet villa entrance in a modern Ras Al Khaimah community with luggage at the door, palm trees and morning light, no people',
-  'the Ras Al Khaimah coastline and Jebel Jais mountains at golden hour, a modern waterfront residence in the foreground',
-  'a premium consultancy meeting room in Ras Al Khaimah with a closed plain passport and a blank gold card on the table, city view, no people',
-  'the Ras Al Khaimah creek with traditional dhows and modern towers behind at sunrise, calm water',
+  'the sandstone rock formations and carved Nabataean tombs of Hegra near AlUla at golden hour, vast desert, no people',
+  'the restored mud-brick lanes and palaces of Diriyah (At-Turaif) near Riyadh at dusk, warm lantern light, no people',
+  'the Jeddah Corniche on the Red Sea at sunset, palm trees and calm water, a long empty waterfront promenade',
+  'red sand dunes at sunrise with a lone 4x4 track and a clear sky, wide landscape',
+  'the green terraced mountains of Asir near Abha under soft clouds, a winding road below',
+  'the Riyadh skyline with the Kingdom Centre tower at blue hour seen across a wide palm-lined boulevard',
+  'a closed plain passport on top of a leather travel wallet beside a folded paper map of Saudi Arabia (no readable words) on a light desk, soft daylight',
+  'the historic coral-stone houses of Al-Balad in Jeddah with wooden roshan balconies in warm morning light, empty lane',
 ];
 const PEOPLE = ['South Asian', 'Arab', 'European', 'East Asian', 'African', 'Latin American', 'Central Asian'];
 const TIME = ['soft morning light', 'bright midday daylight through large windows', 'warm late-afternoon light', 'calm golden-hour light'];
@@ -52,11 +52,11 @@ const PEOPLE_RULES = 'People appear at a natural distance (side or back view, or
 const NEVER_BANNER =
   'No text, letters or numbers anywhere in the picture: a passport only inside a closed plain leather holder with a smooth blank front, cards smooth plain gold with no chip, numbers or embossing, no prices, logos, signs, watermarks, labels, titles or screens. No personal data or photos of a person.';
 
-// what makes a picture look like the real UAE (picture models like to add Mediterranean plants and streets)
-const UAE_REAL = 'It must look like the real UAE today: only plants that grow there (date palms, ghaf trees, bougainvillea, desert shrubs), modern Gulf or traditional Emirati architecture, desert light. No olive trees, cypresses, pine trees, lawns with deciduous trees, European streets, rain or snow.';
+// what makes a picture look like the real Saudi Arabia (picture models like to add Mediterranean plants and streets)
+const UAE_REAL = 'It must look like the real Saudi Arabia (or the UAE, where the scene is in Dubai) today: only plants that grow there (date palms, acacia, bougainvillea, desert shrubs), modern Gulf architecture or traditional Najdi mud-brick and Hijazi coral-stone buildings, desert light. People dressed modestly. No olive trees, cypresses, pine trees, lawns with deciduous trees, European streets, rain or snow. Never show the Kaaba, mosque interiors close up, Quran pages or any religious text.';
 
 const NEVER_SYMBOLS =
-  'The passport cover may show the UAE national emblem and the words UNITED ARAB EMIRATES and PASSPORT in gold, spelled exactly; a residence card may say GOLDEN VISA. Nothing else readable: no other text, numbers, prices, logos, signs, watermarks or screens. No personal data, names, ID numbers, barcodes or photos of a person on any document.';
+  'The passport cover may show the single word PASSPORT in gold, spelled exactly. Nothing else readable, no national emblems: no other text, numbers, prices, logos, signs, watermarks or screens. No personal data, names, ID numbers, barcodes or photos of a person on any document.';
 
 export function buildImagePrompt(o: { purpose: string; hint?: string; topic: string; houseStyle?: string; variant: number; scene?: string; withReference?: boolean; refIdea?: boolean; symbols?: boolean; still?: boolean }) {
   const v = Math.abs(o.variant);
@@ -68,10 +68,10 @@ export function buildImagePrompt(o: { purpose: string; hint?: string; topic: str
       // no topic words for banner photos: picture models tend to print them as text on the image
       o.still
         ? 'Rich, premium wide photograph for a website header, full of meaningful detail. It must contain no text, titles, captions or lettering at all. The main subject fills the RIGHT two thirds of the frame and is large, close and detailed; the left third is bright and simple (soft warm daylight, pale out-of-focus background) with nothing important in it. Bright overall, no black or dark areas.'
-        : `Realistic editorial photograph for a UAE visa article about ${pictureSafe(o.topic) || 'UAE residency'}.`,
+        : `Realistic editorial photograph for a Saudi visa and travel article about ${pictureSafe(o.topic) || 'travelling to Saudi Arabia'}.`,
       `Scene: ${o.scene}`,
       o.still
-        ? `Shot on a full-frame camera with a ${hasPeople ? '35 mm' : '50 mm'} lens, layered depth (detailed foreground, clear middle ground, Ras Al Khaimah skyline behind), bright warm golden-hour daylight, gold, white and black tones, glossy reflections.`
+        ? `Shot on a full-frame camera with a ${hasPeople ? '35 mm' : '50 mm'} lens, layered depth (detailed foreground, clear middle ground, a Gulf or Saudi skyline or landscape behind), bright warm golden-hour daylight, gold, white and black tones, glossy reflections.`
         : `Shot on a full-frame camera with a ${v % 2 ? '35 mm' : '50 mm'} lens, ${TIME[(v + 2) % TIME.length]}.`,
       'Sharp focus, true-to-life colours, realistic materials, believable details, premium calm mood.',
       UAE_REAL,
@@ -91,7 +91,7 @@ export function buildImagePrompt(o: { purpose: string; hint?: string; topic: str
   const scene = hint || SCENES[v % SCENES.length];
   const people = PEOPLE[(v * 3 + 1) % PEOPLE.length];
   return [
-    `Editorial photograph for an article about ${pictureSafe(o.topic) || 'UAE residency'}. Purpose: ${pictureSafe(o.purpose).replace(new RegExp(PEOPLE_WORDS.source, 'gi'), (w) => (withPeople ? w : 'scene')) || 'illustration'}.`,
+    `Editorial photograph for an article about ${pictureSafe(o.topic) || 'travelling to Saudi Arabia'}. Purpose: ${pictureSafe(o.purpose).replace(new RegExp(PEOPLE_WORDS.source, 'gi'), (w) => (withPeople ? w : 'scene')) || 'illustration'}.`,
     `Scene: ${scene}.`,
     withPeople ? `If people appear: ${people} people of mixed ages, natural poses, relaxed and confident, hands relaxed and mostly out of frame.` : '',
     `Shot on a full-frame camera with a ${v % 2 ? '24 mm' : '35 mm'} lens, ${ANGLE[v % ANGLE.length]}, ${TIME[(v + 2) % TIME.length]}.`,

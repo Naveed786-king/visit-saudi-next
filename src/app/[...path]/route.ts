@@ -6,6 +6,24 @@ import { readStored } from '@/lib/upload';
 import { editsFor, getVs, stylingCss } from '@/lib/vs/store';
 import { logView } from '@/lib/vs/apps';
 import { payReturn } from '@/lib/vs/pay';
+import { getChatConfig, widgetConfig } from '@/lib/chatbot/config';
+
+// The AI assistant (Admin → Website chat): only when switched on, its script takes over the site's own chat panel
+const chatCache: { at: number; on: boolean; cfg: Awaited<ReturnType<typeof getChatConfig>> | null } = { at: 0, on: false, cfg: null };
+async function withChat(html: string, pathname: string) {
+  if (Date.now() - chatCache.at > 15_000) {
+    const cfg = await getChatConfig().catch(() => null);
+    chatCache.at = Date.now();
+    chatCache.cfg = cfg;
+    chatCache.on = !!cfg?.enabled;
+  }
+  if (!chatCache.on || !chatCache.cfg || !html.includes('id="chatPanel"')) return html;
+  const lang = (pathname.match(/^\/(ar|ru|de|es|fr|tr|zh|ur|hi|it|ro|pt|pl|hu|hr|sk|cs|id)(\/|$)/) || [])[1] || 'en';
+  const conf = JSON.stringify(widgetConfig(chatCache.cfg, lang)).replace(/</g, '\\u003c');
+  const tag = `<script>window.VS_CHAT=${conf}</script><script src="/vs-chat.js?v=2" defer></script>`;
+  const i = html.lastIndexOf('</body>');
+  return i < 0 ? html + tag : html.slice(0, i) + tag + html.slice(i);
+}
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -56,6 +74,7 @@ async function handle(req: Request) {
       return new Response(new Uint8Array(body), { status: 200, headers: { 'Content-Type': r.mime, 'Cache-Control': r.cache } });
     }
     if (r.status === 200 && req.method === 'GET') logView(pathname).catch(() => {});
+    if (r.status === 200 && !r.mime) r.body = await withChat(r.body, pathname);
     return new Response(r.body, { status: r.status, headers: { 'Content-Type': r.mime || 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
   } catch (e) {
     console.error('[page]', pathname, (e as Error).message);

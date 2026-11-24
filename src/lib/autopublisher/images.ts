@@ -157,10 +157,10 @@ export async function visionCheck(buf: Buffer, purpose: string, cfg: AutoConfig,
   const small = await sharp(buf).resize(1024, 1024, { fit: 'inside' }).jpeg({ quality: 82 }).toBuffer();
   const r = await completeJson<any>({
     system: 'You are a strict picture quality inspector for a premium consultancy website. Be honest and critical.',
-    prompt: `Check this picture, meant for: "${pictureSafe(purpose) || 'a UAE visa article'}"${title ? ` in an article titled "${pictureSafe(title)}"` : ''}.
-${designWords ? designCheck(designWords) + '\nRealism here means overall quality: 9-10 = looks like a professional designer made it, 7-8 = good with tiny flaws, under 6 = clearly broken or amateur.\n' : 'Reject it if ANY of these is true: visible text, letters, numbers, logos or watermarks; deformed or extra fingers/hands; warped or uncanny faces; obvious AI artefacts; blurry or low detail; documents with readable details; off-topic or unrealistic scene.\n'}Off-topic too: plants or places that do not exist in the UAE (olive trees, cypresses, European streets, snow).
-On-topic for this UAE visa and residency consultancy: closed passports with a plain cover or in a leather holder, blank gold or white cards, luggage, airports and planes, consultants talking with clients in an office, families and travellers, UAE landmarks, skylines, homes, offices and coastlines. A plain passport cover or a blank card is fine as long as nothing on it is readable.
-${propText === 'official' ? 'Allowed exception: the UAE national emblem and the exact words UNITED ARAB EMIRATES, PASSPORT or GOLDEN VISA on a passport cover or card prop. Reject them if the lettering is misspelled, garbled or invented, or if any personal data, ID number or face appears.\n' : propText === 'passport' ? 'Allowed exception: a simple crest and the single word PASSPORT, spelled exactly, on a passport cover. Any other lettering, or PASSPORT misspelled or garbled, still counts as visible text.\n' : ''}Realism: 9-10 = indistinguishable from a professional photo, 7-8 = convincing photo with tiny flaws, 5-6 = clearly AI-looking, under 5 = broken.
+    prompt: `Check this picture, meant for: "${pictureSafe(purpose) || 'a Saudi visa and travel article'}"${title ? ` in an article titled "${pictureSafe(title)}"` : ''}.
+${designWords ? designCheck(designWords) + '\nRealism here means overall quality: 9-10 = looks like a professional designer made it, 7-8 = good with tiny flaws, under 6 = clearly broken or amateur.\n' : 'Reject it if ANY of these is true: visible text, letters, numbers, logos or watermarks; deformed or extra fingers/hands; warped or uncanny faces; obvious AI artefacts; blurry or low detail; documents with readable details; off-topic or unrealistic scene.\n'}Off-topic too: plants or places that do not exist in Saudi Arabia or the Gulf (olive trees, cypresses, European streets, snow); the Kaaba, Quran pages or religious text.
+On-topic for this Saudi visa service: closed passports in a plain leather holder, luggage, airports and planes, specialists talking with travellers in an office, families, pilgrims in white ihram seen from afar, business visitors, Saudi landmarks (AlUla, Diriyah, Riyadh, Jeddah, the Red Sea coast, Asir mountains), deserts and Gulf city skylines. A plain passport cover or a blank card is fine as long as nothing on it is readable.
+${propText === 'official' ? 'Allowed exception: the single word PASSPORT, spelled exactly, on a passport cover. Reject it if the lettering is misspelled, garbled or invented, or if any personal data, ID number or face appears.\n' : propText === 'passport' ? 'Allowed exception: a simple crest and the single word PASSPORT, spelled exactly, on a passport cover. Any other lettering, or PASSPORT misspelled or garbled, still counts as visible text.\n' : ''}Realism: 9-10 = indistinguishable from a professional photo, 7-8 = convincing photo with tiny flaws, 5-6 = clearly AI-looking, under 5 = broken.
 Do not fail a picture only because a small detail of the scene description is missing or different (the number of people or objects, a pose, an object left out); judge the photo itself.
 Match: how clearly a reader connects this picture with the article title, 0-10 (7+ = obviously about this topic, under 5 = generic or unrelated).
 Return JSON only: {"ok": true|false, "realism": 0-10, "match": 0-10, "issues": ["…"]}`,
@@ -195,24 +195,24 @@ export type PictureResult = { ok: true; url: string; ogUrl?: string; width: numb
  */
 export async function pictureConcept(spec: PictureSpec, ctx: { topic: string; focusKeyword: string; summary?: string }, refCaption: string, cfg: AutoConfig, banner = false, types: string[] = [], recentAlts: string[] = [], backdrop = false, refIdea = false): Promise<{ scenes: string[]; alts: string[]; alt: string }> {
   const passportRule = cfg.images.officialSymbols
-    ? 'Passports may show the UAE national emblem and the words UNITED ARAB EMIRATES and PASSPORT in gold on the cover (spelled exactly); cards may say GOLDEN VISA. No personal data, names, ID numbers, photos of a person or barcodes.'
+    ? 'Passports may show the single word PASSPORT in gold on the cover (spelled exactly). No national emblems, personal data, names, ID numbers, photos of a person or barcodes.'
     : 'Picture models print garbled words and numbers on documents, so a passport is always inside a closed dark leather passport holder whose front is completely smooth plain leather (no crest, no embossing, no stitching patterns that look like letters); the gold visa card is a smooth plain gold card like a blank metal card, with no chip, numbers, letters or embossing.';
   const kinds = (types.length ? types : ['consult', 'airport', 'desk'])
     .map((id, i) => `${i + 1}. ${sceneType(id)?.brief || id}`)
     .join('\n');
   const task = backdrop
-    ? `Write 3 scenes for the BACKDROP photo of a designed article cover. A gold card graphic is placed on the centre-right of the photo afterwards, so the photo is a clean, beautiful scenic backdrop with nothing important in the centre: skyline, water, sky, the UAE flag or a landmark that fits the title. No desks, documents, passports or cards in the photo; people only small in the distance. Bright warm golden-hour light, left third pale and soft.
+    ? `Write 3 scenes for the BACKDROP photo of a designed article cover. A gold card graphic is placed on the centre-right of the photo afterwards, so the photo is a clean, beautiful scenic backdrop with nothing important in the centre: skyline, water, sky, desert or a landmark that fits the title (no flags). No desks, documents, passports or cards in the photo; people only small in the distance. Bright warm golden-hour light, left third pale and soft.
 Use these 3 kinds, in this order, as backdrops:
 ${kinds}
 Rules:
-- Photorealistic, one real place per scene, real UAE plants and architecture only.
+- Photorealistic, one real place per scene, real Saudi or Gulf plants and architecture only.
 - No text, numbers, logos or signs.
 - Each scene 1-2 sentences, at most 50 words.`
     : banner
-    ? `Write 3 rich, detailed scenes for the photo half of a designed article cover (the title is drawn on the left, so the photo itself carries no words). A reader must see "UAE visa" at a glance and connect it with THIS title. The subject fills the right two thirds of the frame, large and close; the left third stays bright and simple (soft warm daylight, pale out-of-focus background).
+    ? `Write 3 rich, detailed scenes for the photo half of a designed article cover (the title is drawn on the left, so the photo itself carries no words). A reader must see "travel to Saudi Arabia" at a glance and connect it with THIS title. The subject fills the right two thirds of the frame, large and close; the left third stays bright and simple (soft warm daylight, pale out-of-focus background).
 Make the 3 scenes 3 DIFFERENT kinds of picture, in this order:
 ${kinds}
-Shape each kind around THIS title so it could not be used for another article. Add visa touches only where they fit naturally (luggage, the Ras Al Khaimah skyline); passports and cards only in desk or flat-lay scenes, lying on the surface.
+Shape each kind around THIS title so it could not be used for another article. Add visa touches only where they fit naturally (luggage, a Saudi landmark or skyline); passports and cards only in desk or flat-lay scenes, lying on the surface.
 Rules:
 - Photorealistic, bright warm golden-hour light, layered depth (detailed foreground, clear middle ground, skyline behind), gold, white and black tones. Never dark rooms or black backgrounds. Never an almost empty table.
 - People only at a natural distance (medium shot, side, back or three-quarter view); no close-up faces or hands, and nobody holds a passport, card or document.
@@ -220,10 +220,10 @@ Rules:
 - ${passportRule}
 - No other text, numbers, prices, logos, signs, flags with writing or screens with content.
 - Each scene 2-3 sentences, at most 70 words.`
-    : `Write 3 photo scenes for this picture, each a real moment a photographer could shoot in the UAE that clearly shows what THIS title is about. They must be 3 DIFFERENT kinds of picture, in this order:
+    : `Write 3 photo scenes for this picture, each a real moment a photographer could shoot in Saudi Arabia (or in Dubai, for scenes before the trip) that clearly shows what THIS title is about. They must be 3 DIFFERENT kinds of picture, in this order:
 ${kinds}
 Shape each kind around the exact subject of the title (who, where, what moment), so it could not be used for another article.
-Every scene must clearly feel like a UAE visa and residency story. Give each one a natural visa touch that fits the moment, and use a DIFFERENT one in each scene: a plain dark leather passport holder resting on a table or peeking from a bag, a smooth plain gold card lying on a desk, suitcases or a carry-on, an airliner in the sky above the city, an airport arrivals hall, a consultant's desk with closed folders, keys to a new home.
+Every scene must clearly feel like a Saudi visa and travel story. Give each one a natural visa touch that fits the moment, and use a DIFFERENT one in each scene: a plain dark leather passport holder resting on a table or peeking from a bag, a smooth plain gold card lying on a desk, suitcases or a carry-on, an airliner in the sky above the city, an airport arrivals hall, a specialist's desk with closed folders, a Saudi landmark at the destination.
 Rules:
 - Photorealistic editorial photo, natural light, believable details. Different place or camera angle in each scene.
 - People are welcome when they help, but at a natural distance (side or back view, or medium shot); never close-up faces or hands.
@@ -231,7 +231,7 @@ Rules:
 - One real place per scene, shot in one take (no view of another place inside a window).
 - Each scene 1-2 sentences, at most 50 words.`;
   const r = await completeJson<{ scenes?: string[]; alts?: string[]; alt?: string }>({
-    system: 'You are the photo editor of a UAE visa and residency consultancy blog. You pick realistic photos that a reader instantly connects with the article.',
+    system: 'You are the photo editor of a Saudi visa and travel blog. You pick realistic photos that a reader instantly connects with the article.',
     prompt: `ARTICLE TITLE: ${ctx.topic}
 FOCUS KEYWORD: ${ctx.focusKeyword}
 PICTURE FOR: ${spec.kind === 'cover' ? 'the cover (top of the article)' : 'a picture inside the article: another, different view of what the TITLE is about'}
@@ -284,12 +284,12 @@ async function remember(res: PictureResult, type?: string): Promise<PictureResul
 }
 
 const SAFE_SCENE = [
-  'The Ras Al Khaimah skyline with the Hajar mountains behind at golden hour, seen across the water from a quiet promenade, warm sunlight on glass towers, a few date palms in the foreground. No people, no documents.',
-  'The Abu Dhabi Corniche at golden hour: modern towers along the turquoise sea, a palm-lined waterfront walkway. No people, no documents.',
-  'the Ras Al Khaimah creek at sunset with traditional wooden dhows moored along the quay and the modern city behind. No people, no documents.',
-  'Al Marjan Island towers and calm water at golden hour, yachts moored along the marina, warm reflections. No people, no documents.',
-  'Golden desert dunes at sunset with the distant Ras Al Khaimah skyline and the Jebel Jais mountains on the horizon. No people, no documents.',
-  'Modern Ras Al Khaimah city towers and the Jebel Jais mountains against a clear late-afternoon sky, photographed from a terrace with a sand-coloured stone balustrade and date palms in the foreground. No people, no documents.',
+  'The Riyadh skyline with the Kingdom Centre tower at golden hour, seen across a wide palm-lined boulevard, warm sunlight on glass towers. No people, no documents.',
+  'The sandstone rock formations of AlUla at golden hour, vast desert light and a clear sky. No people, no documents.',
+  'The Jeddah Corniche on the Red Sea at sunset, a palm-lined waterfront promenade and calm turquoise water. No people, no documents.',
+  'The restored mud-brick palaces of Diriyah near Riyadh at dusk, warm lantern light. No people, no documents.',
+  'Golden desert dunes at sunset under a clear sky, soft wind ripples in the sand. No people, no documents.',
+  'Modern Dubai towers against a clear late-afternoon sky, photographed from a terrace with a sand-coloured stone balustrade and date palms in the foreground. No people, no documents.',
 ];
 
 /**
@@ -448,7 +448,7 @@ export async function producePicture(spec: PictureSpec, ctx: { topic: string; fo
   });
   // the alt text must describe the scene that was actually used (attempt k uses scene k)
   const generic = /—|^cover|illustration for/i.test(spec.alt);
-  const safeAlt = `UAE city view at golden hour, ${ctx.focusKeyword || ctx.topic}`.slice(0, 200);
+  const safeAlt = `Saudi Arabia at golden hour, ${ctx.focusKeyword || ctx.topic}`.slice(0, 200);
   const altFor = (attempt: number) => (spec.kind === 'cover' && attempt === maxAttempts && (attempt > 1 || spec.safeOnly) ? (generic ? safeAlt : spec.alt) : '') || (generic && concept.scenes.length ? concept.alts[(attempt - 1) % concept.scenes.length] || concept.alt : '') || spec.alt;
   let safeRetry = 0;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

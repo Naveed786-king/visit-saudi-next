@@ -145,7 +145,7 @@ export function LiveJobs({ enabled }: { enabled: boolean }) {
 const EMPTY_MISSION = {
   name: '',
   active: true,
-  focus: 'UAE Golden Visa and residency: eligibility, costs, documents, family and property routes',
+  focus: 'Saudi visas and travel: which visa fits which passport, eVisa, Umrah, family and business visits, documents, costs, timelines, travel tips',
   keywords: 'uae golden visa\ndubai golden visa\ngolden visa property\nfamily visa uae',
   markets: ['AE', 'IN', 'PK', 'GB'],
   languages: [],
@@ -265,7 +265,7 @@ export function MissionsTab() {
             </div>
             <div>
               <label className="admin-label">Custom titles (optional, one per line)</label>
-              <textarea rows={6} className="admin-input font-mono text-xs" placeholder="Golden Visa for nurses | 2026-11-05 | Golden Visa | /uploads/media/nurse.webp" value={edit.customTitles} onChange={(e) => set('customTitles', e.target.value)} />
+              <textarea rows={6} className="admin-input font-mono text-xs" placeholder="Saudi eVisa for UK citizens | 2026-12-01 | Eligibility | /uploads/media/alula.webp" value={edit.customTitles} onChange={(e) => set('customTitles', e.target.value)} />
               <p className="mt-1 text-xs text-gray-500">Format: Title | date | category | image URL — only the title is required. Custom titles are written first, in order.</p>
             </div>
             <div className="md:col-span-2">
@@ -467,7 +467,7 @@ export function ReviewTab() {
             {view.preview?.meta && (
               <div className="rounded-xl ring-1 ring-gray-200 p-3 text-sm">
                 <p className="text-[#1a0dab]">{view.preview.meta.seoTitle}</p>
-                <p className="text-xs text-emerald-700">rakgoldenvisa.com/{view.preview.meta.slug}</p>
+                <p className="text-xs text-emerald-700">visit-saudi.ae/guides/{view.preview.meta.slug}</p>
                 <p className="text-xs text-gray-600">{view.preview.meta.metaDescription}</p>
               </div>
             )}
@@ -588,11 +588,11 @@ export function KeywordsTab() {
 
 /* ------------------------------------------------------------------ company knowledge */
 const KNOWLEDGE: [string, string, string][] = [
-  ['about', 'About Brightlink', 'Who we are, office, licence details exactly as you want them shown.'],
+  ['about', 'About us', 'Who we are, office, licence details exactly as you want them shown.'],
   ['services', 'Services we offer (extra notes)', 'Your active services are read automatically — add anything they do not say.'],
   ['prices', 'Real prices and fees', 'The cost calculator prices are read automatically. Only these numbers may appear as our prices.'],
-  ['timelines', 'Real timelines', 'e.g. "Property Golden Visa: usually 5–10 working days after a complete file".'],
-  ['cases', 'Real anonymised cases', 'e.g. "An Indian engineer earning AED 32,000 basic was approved in 6 days". Never names.'],
+  ['timelines', 'Real timelines', 'e.g. "Tourist eVisa: most decisions within a few working days after submission".'],
+  ['cases', 'Real anonymised cases', 'e.g. "A UAE resident with an Indian passport got the eVisa on residency in 3 days". Never names.'],
   ['mistakes', 'Common mistakes we see', 'What goes wrong in real files — this makes articles genuinely useful.'],
   ['rules', 'Rules: never say or promise', 'e.g. never guarantee approval, never quote a fee that is not listed.'],
   ['cta', 'Call to action', 'How to invite the reader: WhatsApp, the cost calculator, /apply.'],

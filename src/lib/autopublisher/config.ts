@@ -55,7 +55,7 @@ export type AutoConfig = {
     meaningThreshold: number;
     bannedPhrases: string[];
     dailyCap: number; // posts per day for the whole site
-    activeFrom: number; // hour 0-23 (UAE time)
+    activeFrom: number; // hour 0-23 (Dubai time)
     activeTo: number;
     refreshPerWeek: number;
     maxAiCallsPerDay: number;
@@ -80,7 +80,7 @@ export const DEFAULT_CONFIG: AutoConfig = {
     kingmaker: { key: '', model: 'qwen2.5:7b', baseUrl: KING_MAKER_BASE },
   },
   useTranslationGeminiKey: true,
-  images: { provider: 'openai', openaiModel: 'gpt-image-2', geminiModel: 'gemini-2.5-flash-image', quality: 'medium', inline: 2, saveCredit: true, coverOpenAiOnly: true, houseStyle: '', onFail: 'skip', minSharpness: 60, minRealism: 7, coverStyle: 'banner', showLogo: true, ribbonText: '', officialSymbols: false, visaCard: 'auto' },
+  images: { provider: 'openai', openaiModel: 'gpt-image-2', geminiModel: 'gemini-2.5-flash-image', quality: 'medium', inline: 2, saveCredit: true, coverOpenAiOnly: true, houseStyle: '', onFail: 'skip', minSharpness: 60, minRealism: 7, coverStyle: 'banner', showLogo: true, ribbonText: '', officialSymbols: false, visaCard: 'off' },
   quality: {
     minQuality: 80,
     minSeo: 80,
@@ -100,14 +100,14 @@ export const DEFAULT_CONFIG: AutoConfig = {
     refreshMode: 'publish',
   },
   knowledge: {
-    about: '',
+    about: 'Visit Saudi (visit-saudi.ae) is a Dubai-based Saudi visa assistance service operated by Brightlink Management Consultancy LLC, a private consultancy licensed in Dubai. We prepare Saudi visa applications for travellers, families, pilgrims and businesses, most of them based in the UAE and the wider Gulf. We check eligibility before the client pays, review every document against the official requirements before submission, show the full cost in writing (government fee and service fee separately) and keep the client updated at every stage until the visa is issued.',
     services: '',
     prices: '',
     timelines: '',
     cases: '',
     mistakes: '',
-    rules: 'Never guarantee visa approval — the UAE authorities decide.\nNever invent prices, timelines, reviews or client stories.',
-    cta: '',
+    rules: 'Never guarantee visa approval — the Saudi authorities decide.\nWe are a private service, not a government authority, and we do not issue visas.\nNever invent prices, timelines, reviews or client stories.\nNo images or descriptions of the Kaaba interior, the Prophet or Quran verses; respect Makkah and Madinah rules (non-Muslims cannot enter Makkah).',
+    cta: 'Check your eligibility in a minute at /eligibility, then apply online at /apply - a specialist reviews your documents before anything is submitted, and your total is confirmed in writing before you pay.',
   },
 };
 
@@ -137,13 +137,14 @@ export async function saveAutoConfig(incoming: Partial<AutoConfig>): Promise<Aut
   // our logo is on every picture, always
   next.images.showLogo = true;
   next.images.ribbonText = String(next.images.ribbonText || '').trim().slice(0, 40);
-  next.images.officialSymbols = next.images.officialSymbols === true;
+  next.images.officialSymbols = false; // no national emblems or official wording in pictures
   next.images.saveCredit = next.images.saveCredit !== false;
   next.images.coverOpenAiOnly = true;
   next.images.provider = 'openai'; // all pictures come from ChatGPT only // featured images always come from ChatGPT, never another picture AI
   // the credit saver never pays for the most expensive picture quality
   if (next.images.saveCredit && next.images.quality === 'high') next.images.quality = 'medium';
-  next.images.visaCard = next.images.visaCard === 'off' ? 'off' : 'auto';
+  // the drawn gold card reads UAE GOLDEN VISA: not used on this Saudi visa website
+  next.images.visaCard = 'off';
   const value = JSON.stringify(next);
   await prisma.setting.upsert({ where: { key: KEY }, update: { value }, create: { key: KEY, value } });
   return next;

@@ -339,11 +339,9 @@ function AiTab({ cfg, patch, providers, act }: { cfg: any; patch: (fn: (c: any) 
             <p className="text-xs leading-relaxed text-gray-500">On: a cover gets at most 3 pictures (2 designs + 1 safe photo) and an inside picture 1; quality never above medium; no second round. Off: up to 14 pictures for a difficult cover, so the AI bill can be many times higher.</p>
             <div>
               <label className="admin-label">Text in the banner's gold ribbon</label>
-              <input className="admin-input" maxLength={40} placeholder="e.g. GoldenVisaUAE.ai (empty = website address)" value={cfg.images.ribbonText || ''} onChange={(e) => patch((c) => ((c.images.ribbonText = e.target.value), c))} />
+              <input className="admin-input" maxLength={40} placeholder="e.g. visit-saudi.ae (empty = website address)" value={cfg.images.ribbonText || ''} onChange={(e) => patch((c) => ((c.images.ribbonText = e.target.value), c))} />
             </div>
-            <Toggle checked={cfg.images.visaCard !== 'off'} onChange={(v) => patch((c) => ((c.images.visaCard = v ? 'auto' : 'off'), c))} label="Gold UAE GOLDEN VISA card on covers whose title is about a visa" />
-            <Toggle checked={!!cfg.images.officialSymbols} onChange={(v) => patch((c) => ((c.images.officialSymbols = v), c))} label="Real UAE emblem and wording on passports/cards in covers" />
-            <p className="text-xs leading-relaxed text-amber-800">Off by default. Using the UAE national emblem in advertising usually needs official approval; when off, passports and cards look real but carry a plain gold crest and no wording. Never shows personal data or ID numbers.</p>
+            <p className="text-xs leading-relaxed text-gray-500">Pictures never show national emblems, flags with writing, official wording or personal data.</p>
           </div>
           <div className="md:col-span-2">
             <label className="admin-label">House photo style</label>
@@ -384,7 +382,7 @@ function keyWarning(provider: string, key: string): string {
 function TestPicture() {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<any>(null);
-  const [title, setTitle] = useState('How much is a UAE Golden Visa for a family?');
+  const [title, setTitle] = useState('How long does a Saudi tourist eVisa take?');
   const [idea, setIdea] = useState('');
   async function run() {
     setBusy(true);
@@ -469,8 +467,8 @@ function QualityTab({ cfg, patch }: { cfg: any; patch: (fn: (c: any) => any) => 
         <div className="grid gap-5 p-5 sm:grid-cols-2">
           {num('dailyCap', 'Posts per day (whole site)', 'No bursts — posts are spread through the active hours.', 1, 0, 50)}
           {num('refreshPerWeek', 'Old posts refreshed per week', 'Weakest posts first; the old version is kept for one-click restore.', 1, 0, 100)}
-          {num('activeFrom', 'Active from (hour, UAE time)', 'Publishing window start. 0 and 24 = any time of day. Ready articles publish at once (30 minutes apart).', 1, 0, 23)}
-          {num('activeTo', 'Active until (hour, UAE time)', 'Publishing window end.', 1, 1, 24)}
+          {num('activeFrom', 'Active from (hour, Dubai time)', 'Publishing window start. 0 and 24 = any time of day. Ready articles publish at once (30 minutes apart).', 1, 0, 23)}
+          {num('activeTo', 'Active until (hour, Dubai time)', 'Publishing window end.', 1, 1, 24)}
           {num('maxAiCallsPerDay', 'Max AI calls per day', 'Hard cost limit. When reached, it pauses until tomorrow. 0 = no limit.', 1, 0, 5000)}
           <div>
             <label className="admin-label">Refreshed & replaced posts</label>

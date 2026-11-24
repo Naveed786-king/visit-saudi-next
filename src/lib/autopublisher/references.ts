@@ -26,7 +26,7 @@ export async function describeReferences(cfg: AutoConfig, limit = 5): Promise<nu
     try {
       const img = await referenceImage(r.url, 768);
       const d = await completeJson<{ caption?: string; tags?: string[] }>({
-        system: 'You describe photos for the picture library of a UAE visa and residency consultancy. Be literal and specific.',
+        system: 'You describe photos for the picture library of a Saudi visa and travel service. Be literal and specific.',
         prompt: 'Describe this photo in ONE sentence (place, main objects, people if any, light and mood). Then give 6-12 single-word tags (lowercase, English) a writer would search for.\nReturn JSON only: {"caption": "", "tags": [""]}',
         images: [{ mime: 'image/jpeg', data: img.toString('base64') }],
         temperature: 0.2,

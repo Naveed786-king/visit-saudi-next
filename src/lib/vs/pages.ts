@@ -66,8 +66,21 @@ export function fieldsIn<T extends { tr?: Record<string, VsTr> }>(x: T, lang: st
   const t = lang ? x.tr?.[lang] : undefined;
   if (!t) return x;
   const out: any = { ...x };
-  for (const k of ['title', 'subtitle', 'crumb', 'cat', 'excerpt', 'description', 'body'] as const) if (t[k]) out[k] = t[k];
+  for (const k of ['title', 'subtitle', 'crumb', 'cat', 'excerpt', 'description', 'body', 'html'] as const) if (t[k]) out[k] = t[k];
   return out;
+}
+
+const plainText = (h: string) => decEnt(String(h || '').replace(/<[^>]+>/g, ' '));
+/** A finished HTML article: its sections get the guide's "sec-N" anchors for the "In this guide" box */
+export function htmlArticle(html: string) {
+  const headings: string[] = [];
+  let n = 0;
+  const out = html.replace(/<h2(\s[^>]*)?>([\s\S]*?)<\/h2>(\s*<details)?/g, (m, attrs: string | undefined, inner: string, faq: string | undefined) => {
+    if (faq || /id="/.test(attrs || '')) return m;
+    headings.push(plainText(inner).trim());
+    return '<h2 id="sec-' + n++ + '"' + (attrs || '') + '>' + inner + '</h2>';
+  });
+  return { html: out, headings };
 }
 
 /* ---------------------------------------------------------------- posts */
@@ -83,17 +96,18 @@ export function buildPost(post0: VsPost, lang: string | null) {
   let head = html.slice(a, b);
   head = head.replace(/(<div class="crumb"[^>]*><a href="\/guides">[^<]*<\/a>)[^<]*(<\/div>)/, (m, x, y) => x + ' &nbsp;/&nbsp; ' + escText(post.cat || 'News') + y);
   head = head.replace(/(<h1[^>]*>)[\s\S]*?(<\/h1>)/, (m, x, y) => x + escText(post.title) + y);
-  head = head.replace(/(<p class="meta"[^>]*>)[\s\S]*?(<\/p>)/, (m, x, y) => x + readingMinutes(post.body) + ' min read &nbsp;|&nbsp; By the Visit Saudi team &nbsp;|&nbsp; ' + escText(post0.date || '') + y);
+  head = head.replace(/(<p class="meta"[^>]*>)[\s\S]*?(<\/p>)/, (m, x, y) => x + readingMinutes(post.html ? plainText(post.html) : post.body) + ' min read &nbsp;|&nbsp; By the Visit Saudi team &nbsp;|&nbsp; ' + escText(post0.date || '') + y);
   if (post0.image) head = head.replace(/<img class="heroimg"[^>]*>/, '<img class="heroimg" src="' + escAttr(rootImg(post0.image)) + '" alt="' + escAttr(post.title) + '">');
   else head = head.replace(/<img class="heroimg"[^>]*>\s*/, '');
   head = head.replace(/(<p class="lead"[^>]*>)[\s\S]*?(<\/p>)/, (m, x, y) => (post.excerpt ? x + escText(post.excerpt) + y : ''));
   head = head.replace(/<div class="summary"[\s\S]*?<\/ul><\/div>\s*/, '');
-  const hs = richHeadings(post.body);
+  const art = post.html ? htmlArticle(post.html) : { html: richToHtml(post.body), headings: richHeadings(post.body) };
+  const hs = art.headings;
   head = head.replace(/<div class="tocbox">[\s\S]*?<\/ol><\/div>\s*/, hs.length > 1 ? '<div class="tocbox"><b>In this guide</b><ol>' + hs.map((h, i) => '<li><a href="#sec-' + i + '">' + escText(h) + '</a></li>').join('') + '</ol></div>\n' : '');
   // the article text: from the first section heading of the template to the author card
   const z = head.indexOf('<h2 id="sec-');
   if (z >= 0) head = head.slice(0, z);
-  return html.slice(0, a) + head + richToHtml(post.body) + '\n' + html.slice(b);
+  return html.slice(0, a) + head + art.html + '\n' + html.slice(b);
 }
 
 /** Cards of the added posts on /guides (newest first), in the same design as the guide cards */
@@ -106,7 +120,7 @@ export function postCards(posts: VsPost[], lang: string | null) {
         '<article class="post rv" data-cat="' + escAttr(p0.cat || 'News') + '" data-q="' + escAttr(q) + '">' +
         (p0.image ? '<img src="' + escAttr(rootImg(p0.image)) + '" alt="' + escAttr(p.title) + '" loading="lazy">' : '') +
         '<div class="body">\n<span class="pill">' + escText(p.cat || 'News') + '</span><h3><a href="/guides/' + escAttr(p0.slug) + '" style="color:inherit">' + escText(p.title) + '</a></h3>\n' +
-        '<p>' + escText(p.excerpt || '') + '</p><span class="meta">' + escText(p.cat || 'News') + ' &middot; ' + readingMinutes(p0.body) + ' min read &middot; ' + escText(p0.date || '') + '</span></div></article>'
+        '<p>' + escText(p.excerpt || '') + '</p><span class="meta">' + escText(p.cat || 'News') + ' &middot; ' + readingMinutes(p0.html ? plainText(p0.html) : p0.body) + ' min read &middot; ' + escText(p0.date || '') + '</span></div></article>'
       );
     })
     .join('');

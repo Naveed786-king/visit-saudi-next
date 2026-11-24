@@ -245,7 +245,7 @@ export function unsupportedNumbers(html: string, allowed: string): string[] {
 }
 
 /** Keeps only safe tags/attributes for post content (no h1, scripts, styles, external links) */
-export function cleanArticleHtml(html: string, ownHosts: string[] = ['rakgoldenvisa.com']): string {
+export function cleanArticleHtml(html: string, ownHosts: string[] = ['visit-saudi.ae']): string {
   let s = String(html || '');
   s = s.replace(/<(script|style|iframe|object|embed|form)[\s\S]*?<\/\1>/gi, '');
   s = s.replace(/<(script|style|iframe|object|embed|form|input|button)[^>]*\/?>/gi, '');

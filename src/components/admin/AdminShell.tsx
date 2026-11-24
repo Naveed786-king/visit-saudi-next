@@ -64,6 +64,8 @@ const NAV = [
       { href: '/admin/site-posts', label: 'Posts & guides', icon: Newspaper, adminOnly: true },
       { href: '/admin/site-texts', label: 'Translations', icon: Languages, adminOnly: true },
       { href: '/admin/site-styling', label: 'Page styling', icon: Palette, adminOnly: true },
+      { href: '/admin/chatbot', label: 'Website chat (AI)', icon: Bot, adminOnly: true },
+      { href: '/admin/autopublisher', label: 'Auto Publisher (AI)', icon: Sparkles, adminOnly: true },
       { href: '/admin/reviews', label: 'Reviews', icon: MessageSquareQuote, adminOnly: true },
       { href: '/admin/prices', label: 'Visa prices & pay online', icon: BadgeCheck, adminOnly: true },
       { href: '/admin/media', label: 'Media library', icon: ImageIcon },

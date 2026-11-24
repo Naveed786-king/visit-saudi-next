@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { mirrorSafe } from '@/lib/vs/autopost';
 import { prisma } from '@/lib/db';
 import { ok, fail, refreshSite } from '@/lib/api';
 import { requireAdmin } from '@/lib/auth';
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
         const text = stripHtml(p.content || '').slice(0, 3500);
         const res = await producePicture({ kind: 'cover', purpose: `cover picture for "${p.title}"`, alt: p.title }, { topic: p.title, focusKeyword: p.title, summary: stripHtml(p.excerpt || ''), variant: Date.now() % 1000, articleText: text }, cfg).catch((e) => ({ ok: false as const, reason: String(e?.message || e), attempts: 0 }));
         if (res.ok) {
-          await prisma.post.update({ where: { id: p.id }, data: { cover: res.url } });
+          mirrorSafe(await prisma.post.update({ where: { id: p.id }, data: { cover: res.url } }));
           progress.done++;
           await autoLog('info', `16:9 cover remade for "${p.title}": ${res.url}`);
         } else {

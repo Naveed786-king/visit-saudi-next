@@ -5,7 +5,7 @@ import { autoLog } from './log';
 import { isFakeAi } from './ai';
 import { keywordIntent, normalize, scoreKeyword, terms } from './text';
 
-const UA = 'Mozilla/5.0 (compatible; RAKGoldenVisa-Publisher/1.0; +https://rakgoldenvisa.com)';
+const UA = 'Mozilla/5.0 (compatible; VisitSaudi-Publisher/1.0; +https://visit-saudi.ae)';
 const CACHE_MS = 6 * 3_600_000;
 
 type CacheEntry = { at: number; body: string };

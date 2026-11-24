@@ -5,16 +5,8 @@ import { Btn, Card, Empty, Modal, PageTitle, Spinner, Toggle, api, confirmDialog
 import { cn } from '@/lib/utils';
 
 const LANGS: [string, string][] = [
-  ['en', 'English'],
-  ['ar', 'Arabic'],
-  ['ru', 'Russian'],
-  ['tr', 'Turkish'],
-  ['zh', 'Chinese'],
-  ['fr', 'French'],
-  ['de', 'German'],
-  ['es', 'Spanish'],
-  ['ro', 'Romanian'],
-  ['hi', 'Hindi'],
+  ['en', 'English'], ['ar', 'Arabic'], ['ru', 'Russian'], ['de', 'German'], ['es', 'Spanish'], ['fr', 'French'], ['tr', 'Turkish'], ['zh', 'Chinese'], ['ur', 'Urdu'], ['hi', 'Hindi'],
+  ['it', 'Italian'], ['ro', 'Romanian'], ['pt', 'Portuguese'], ['pl', 'Polish'], ['hu', 'Hungarian'], ['hr', 'Croatian'], ['sk', 'Slovak'], ['cs', 'Czech'], ['id', 'Indonesian'],
 ];
 const REASON: Record<string, string> = { apply: 'Wants to apply', quote: 'Personal quote', unknown: 'Could not answer', human: 'Asked for a human' };
 
@@ -296,7 +288,7 @@ function Settings({ cfg, patch, providers }: { cfg: any; patch: (fn: (c: any) =>
           </div>
           <div>
             <label className="admin-label">Title under the name</label>
-            <input className="admin-input" placeholder="e.g. Golden Visa advisor" value={cfg.role || ''} onChange={(e) => patch((c) => (c.role = e.target.value))} />
+            <input className="admin-input" placeholder="e.g. Saudi visa advisor" value={cfg.role || ''} onChange={(e) => patch((c) => (c.role = e.target.value))} />
           </div>
           <div className="sm:col-span-2">
             <label className="admin-label">Advisor picture</label>
@@ -334,7 +326,7 @@ function Settings({ cfg, patch, providers }: { cfg: any; patch: (fn: (c: any) =>
           <div className="sm:col-span-2">
             <label className="admin-label">Extra rules for the bot (one per line)</label>
             <textarea rows={3} className="admin-input" placeholder="e.g. Always mention our office hours when someone asks to visit." value={cfg.extraRules} onChange={(e) => patch((c) => (c.extraRules = e.target.value))} />
-            <p className="mt-1 text-xs text-gray-500">The bot also uses Company knowledge from Auto Publisher, your services, cost-calculator prices, FAQs and articles.</p>
+            <p className="mt-1 text-xs text-gray-500">The bot also uses Company knowledge from Auto Publisher, your visa prices, the eligible nationalities, the FAQ page, every visa page and every guide and post of the website.</p>
           </div>
         </div>
       </Card>
@@ -344,7 +336,7 @@ function Settings({ cfg, patch, providers }: { cfg: any; patch: (fn: (c: any) =>
           {LANGS.map(([code, name]) => (
             <div key={code}>
               <label className="admin-label">{name}</label>
-              <textarea rows={2} dir={code === 'ar' ? 'rtl' : 'ltr'} className="admin-input" value={cfg.greetings?.[code] || ''} onChange={(e) => patch((c) => (c.greetings = { ...c.greetings, [code]: e.target.value }))} />
+              <textarea rows={2} dir={code === 'ar' || code === 'ur' ? 'rtl' : 'ltr'} className="admin-input" value={cfg.greetings?.[code] || ''} onChange={(e) => patch((c) => (c.greetings = { ...c.greetings, [code]: e.target.value }))} />
             </div>
           ))}
         </div>

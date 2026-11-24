@@ -26,7 +26,7 @@ export const metaOf = (a: { meta?: string | null; familyMembers?: number }): Fil
   const m = safeJson<FileMeta>(a.meta ?? null, {});
   return { ...m, location: m.location === 'out' ? 'out' : 'in', adults: m.adults ?? a.familyMembers ?? 0, kids: m.kids ?? 0, requests: Array.isArray(m.requests) ? m.requests : [] };
 };
-export const DEFAULT_REQUESTS = ['Passport copy (valid 6+ months)', 'Passport photo (white background)', 'Emirates ID (if inside the UAE)', 'Proof for the Golden Visa (title deed, salary certificate, trade licence…)'];
+export const DEFAULT_REQUESTS = ['Passport copy (valid 6+ months)', 'Passport photo (white background)', 'UAE / GCC residence visa or Emirates ID (if you apply on your residency)', 'Invitation or host details (family, personal or business visit)'];
 
 export const DECISION_LABEL: Record<DecisionResult, string> = {
   approved: 'Approved',

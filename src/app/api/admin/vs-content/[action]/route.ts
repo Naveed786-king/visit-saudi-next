@@ -3,12 +3,14 @@
 import fs from 'fs';
 import path from 'path';
 import { requireAdmin } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { json, readJson } from '@/lib/vs/http';
 import { getVs, saveVs, type VsPage, type VsPost, type VsTr } from '@/lib/vs/store';
 import { LANG_LIST, SITE_ROOT, guideZone, listBuiltGuides, zoneToText, decEnt } from '@/lib/vs/render';
 import { buildPost, buildSimplePage, pageTexts } from '@/lib/vs/pages';
 import { engineProblem, ensureStrings, followEnglishChange, siteTexts, translateFields, translationOf } from '@/lib/vs/translate';
 import { translationConfig } from '@/lib/i18n/translate';
+import { syncAutoPosts } from '@/lib/vs/autopost';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -111,12 +113,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ action: string 
     }
     case 'posts': {
       await migrateOldNews();
+      await syncAutoPosts().catch((e) => console.error('[posts] Auto Publisher sync:', e instanceof Error ? e.message : e));
       const [govs, posts] = await Promise.all([getVs('vs.guides'), getVs('vs.posts')]);
       const guides = listBuiltGuides().map((g) => {
         const ov = govs[g.slug];
         return { kind: 'guide', slug: g.slug, title: ov?.title || g.title, cat: ov?.cat || g.cat, excerpt: ov?.excerpt || g.excerpt, image: ov?.image || g.image, edited: !!ov, published: ov?.published !== false, langs: ov ? trLangs(ov.tr).length : LANG_LIST.length };
       });
-      const own = posts.map((p) => ({ kind: 'post', slug: p.slug, title: p.title, cat: p.cat, excerpt: p.excerpt, image: p.image, edited: false, published: p.published, date: p.date, langs: trLangs(p.tr).length }));
+      const own = posts.map((p) => ({ kind: 'post', slug: p.slug, title: p.title, cat: p.cat, excerpt: p.excerpt, image: p.image, edited: false, published: p.published, date: p.date, langs: trLangs(p.tr).length, auto: !!p.autoId }));
       const cats = Array.from(new Set([...guides.map((g) => g.cat), ...own.map((p) => p.cat)].filter(Boolean))).sort();
       return json(200, { ok: true, posts: [...own, ...guides], cats });
     }
@@ -187,6 +190,7 @@ function cleanTr(tr: any): Record<string, VsTr> {
     const x: VsTr = {};
     for (const k of ['title', 'subtitle', 'crumb', 'cat', 'excerpt', 'description'] as const) if (t[k]) x[k] = String(t[k]).slice(0, 400);
     if (t.body) x.body = String(t.body).slice(0, 80000);
+    if (t.html) x.html = String(t.html).slice(0, 400000);
     if (t.manual) x.manual = true;
     if (t.at) x.at = String(t.at).slice(0, 40);
     if (Object.keys(x).length) out[l] = x;
@@ -321,6 +325,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
         excerpt: String(b.excerpt || '').slice(0, 400),
         image: String(b.image || '').slice(0, 400),
         body: String(b.body || '').slice(0, 80000),
+        html: prev?.html !== undefined || b.html ? String(b.html ?? prev?.html ?? '').slice(0, 400000) : undefined,
+        autoId: prev?.autoId,
+        seoTitle: prev?.seoTitle,
         date: String(b.date || prev?.date || new Date().toISOString().slice(0, 10)).slice(0, 10),
         published: b.published !== false,
         updatedAt: new Date().toISOString(),
@@ -330,6 +337,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
       if (i >= 0) posts[i] = post;
       else posts.unshift(post);
       await saveVs('vs.posts', posts);
+      // an Auto Publisher article: its own record follows, so the next sync keeps these changes
+      if (post.autoId) {
+        await prisma.post
+          .update({ where: { id: post.autoId }, data: { slug: post.slug, title: post.title, excerpt: post.excerpt, category: post.cat, cover: post.image || null, content: post.html ?? undefined, status: post.published ? 'published' : 'draft' } })
+          .catch((e) => console.error('[posts] Auto Publisher record not updated:', e instanceof Error ? e.message : e));
+      }
       return json(200, { ok: true, slug });
     }
     case 'post-delete': {
@@ -342,7 +355,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
         await saveVs('vs.guides', govs);
         return json(200, { ok: true, hidden: true });
       }
-      await saveVs('vs.posts', (await getVs('vs.posts')).filter((x) => x.slug !== b.slug));
+      const all = await getVs('vs.posts');
+      const gone = all.find((x) => x.slug === b.slug);
+      await saveVs('vs.posts', all.filter((x) => x.slug !== b.slug));
+      if (gone?.autoId) {
+        await prisma.post.delete({ where: { id: gone.autoId } }).catch(() => null);
+        await prisma.autoFingerprint.deleteMany({ where: { kind: 'post', refId: gone.autoId } }).catch(() => null);
+      }
       return json(200, { ok: true });
     }
     case 'post-visibility': {
@@ -364,6 +383,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
       if (!p) return json(404, { ok: false });
       p.published = show;
       await saveVs('vs.posts', posts);
+      if (p.autoId) await prisma.post.update({ where: { id: p.autoId }, data: { status: show ? 'published' : 'draft' } }).catch(() => null);
       return json(200, { ok: true });
     }
     case 'guide-reset': {
@@ -379,7 +399,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
         const page: VsPage = { slug: slugify(b.slug || b.title) || 'preview', mode: 'simple', title: String(b.title || ''), subtitle: String(b.subtitle || ''), crumb: String(b.crumb || ''), description: String(b.description || ''), image: String(b.image || ''), body: String(b.body || ''), published: true, tr: cleanTr(b.tr) };
         return json(200, { ok: true, html: buildSimplePage(page, lang) });
       }
-      const post: VsPost = { slug: slugify(b.slug || b.title) || 'preview', title: String(b.title || ''), cat: String(b.cat || 'News'), excerpt: String(b.excerpt || ''), image: String(b.image || ''), body: String(b.body || ''), date: new Date().toISOString().slice(0, 10), published: true, tr: cleanTr(b.tr) };
+      const post: VsPost = { slug: slugify(b.slug || b.title) || 'preview', title: String(b.title || ''), cat: String(b.cat || 'News'), excerpt: String(b.excerpt || ''), image: String(b.image || ''), body: String(b.body || ''), html: b.html ? String(b.html) : undefined, date: new Date().toISOString().slice(0, 10), published: true, tr: cleanTr(b.tr) };
       return json(200, { ok: true, html: buildPost(post, lang) });
     }
     /* ---------- translation ---------- */

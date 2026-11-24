@@ -136,7 +136,7 @@ export async function testProvider(id: ProviderId): Promise<{ answer: string; ms
   const answer = await complete({
     provider: id,
     system: 'You are a connection test. Reply briefly.',
-    prompt: 'Reply with exactly: {"ok":true,"message":"RAK Golden Visa publisher connected"}',
+    prompt: 'Reply with exactly: {"ok":true,"message":"Visit Saudi publisher connected"}',
     json: true,
     temperature: 0,
     maxTokens: 200,
@@ -259,8 +259,8 @@ async function callOpenAiCompatible(id: ProviderId, key: string, model: string, 
   };
   const headers: Record<string, string> = { Authorization: `Bearer ${key}`, 'content-type': 'application/json' };
   if (!isOpenAi && !isKing) {
-    headers['HTTP-Referer'] = 'https://rakgoldenvisa.com';
-    headers['X-Title'] = 'RAK Golden Visa Auto Publisher';
+    headers['HTTP-Referer'] = 'https://visit-saudi.ae';
+    headers['X-Title'] = 'Visit Saudi Auto Publisher';
   }
   const who = isOpenAi ? 'OpenAI' : isKing ? 'King Maker' : 'OpenRouter';
   const j = await http(url, { method: 'POST', headers, body: JSON.stringify(body) }, timeoutMs, who);
@@ -272,13 +272,13 @@ async function callOpenAiCompatible(id: ProviderId, key: string, model: string, 
 // ---------------------------------------------------------------- fake mode (dry runs)
 
 function fakeAnswer(o: CompleteOpts): string {
-  if (/connection test/i.test(o.system)) return JSON.stringify({ ok: true, message: 'RAK Golden Visa publisher connected (fake mode)' });
+  if (/connection test/i.test(o.system)) return JSON.stringify({ ok: true, message: 'Visit Saudi publisher connected (fake mode)' });
   if (!o.json) return 'Fake AI answer for a dry run.';
   if (/content strategist/i.test(o.system)) return JSON.stringify({ intent: 'informational', reader: { who: 'family', country: 'AE', fears: 'rejection', wants: 'clear steps' }, angle: 'checklist with mistakes', title: FAKE_ARTICLE.title, outline: [{ h2: 'What this sample shows', h3: [], notes: '' }], quickAnswer: 'sample', table: '', companyFacts: [], faq: ['Is this a real article?'], internalLinks: FAKE_ARTICLE.internalLinks, cta: 'Talk to us', imagePlan: [{ purpose: 'cover' }], category: 'Process' });
   if (/picture quality inspector/i.test(o.system)) return JSON.stringify({ ok: true, realism: 9, issues: [] });
-  if (/cover designer/i.test(o.system)) return JSON.stringify({ line1: 'Golden Visa', line2: 'For Families', subtitle: 'A calm first-month plan', cards: [{ label: 'Documents', icon: 'document' }, { label: 'Medical', icon: 'medical' }, { label: 'Emirates ID', icon: 'id-card' }, { label: 'New Home', icon: 'home' }], features: [{ label: 'Ras Al Khaimah office', icon: 'location' }, { label: 'Family sponsorship', icon: 'family' }, { label: 'Clear timeline', icon: 'calendar' }, { label: 'WhatsApp support', icon: 'support' }] });
-  if (/photo editor/i.test(o.system)) return JSON.stringify({ scenes: ['A family with two suitcases arriving at a bright modern Ras Al Khaimah apartment, seen from behind, warm evening light', 'A closed plain passport and house keys on a marble kitchen counter, Al Marjan Island towers through the window', 'A consultant desk in a Ras Al Khaimah office with closed folders, city view, soft daylight'], alts: ['Family arriving at their new Ras Al Khaimah home (sample)', 'Passport and house keys on a Ras Al Khaimah kitchen counter (sample)', 'Consultant desk in Ras Al Khaimah (sample)'] });
-  if (/picture library/i.test(o.system)) return JSON.stringify({ caption: 'Sample library photo: modern Ras Al Khaimah interior with soft daylight (dry run)', tags: ['dubai', 'interior', 'home', 'daylight', 'visa'] });
+  if (/cover designer/i.test(o.system)) return JSON.stringify({ line1: 'Saudi eVisa', line2: 'For Families', subtitle: 'What to prepare first', cards: [{ label: 'Documents', icon: 'document' }, { label: 'Medical', icon: 'medical' }, { label: 'Emirates ID', icon: 'id-card' }, { label: 'New Home', icon: 'home' }], features: [{ label: 'Ras Al Khaimah office', icon: 'location' }, { label: 'Family sponsorship', icon: 'family' }, { label: 'Clear timeline', icon: 'calendar' }, { label: 'WhatsApp support', icon: 'support' }] });
+  if (/photo editor/i.test(o.system)) return JSON.stringify({ scenes: ['A family with two suitcases arriving at a bright modern Riyadh home, seen from behind, warm evening light', 'A closed plain passport and house keys on a marble kitchen counter, Al Marjan Island towers through the window', 'A consultant desk in a Ras Al Khaimah office with closed folders, city view, soft daylight'], alts: ['Family arriving at their new Ras Al Khaimah home (sample)', 'Passport and house keys on a Ras Al Khaimah kitchen counter (sample)', 'Consultant desk in Ras Al Khaimah (sample)'] });
+  if (/picture library/i.test(o.system)) return JSON.stringify({ caption: 'Sample library photo: modern Riyadh interior with soft daylight (dry run)', tags: ['dubai', 'interior', 'home', 'daylight', 'visa'] });
   if (/native .* editor/i.test(o.system)) return JSON.stringify({ ...FAKE_ARTICLE, title: `${FAKE_ARTICLE.title} (native sample)`, contentHtml: FAKE_ARTICLE.contentHtml.replace('sample shows', 'native sample shows') });
   if (/strict senior human editor/i.test(o.system)) return JSON.stringify({ article: parseJsonLoose((o.prompt.split('ARTICLE (JSON):')[1] || '').split('\n\nReturn JSON only')[0]) || FAKE_ARTICLE, quality: { score: 90, helpfulness: 90, originality: 90, accuracy: 90, readability: 90, eeat: 90, reasons: ['Fake mode sample'] }, unsupportedClaims: [] });
   return JSON.stringify(fakeVariant(o.prompt));
@@ -286,7 +286,7 @@ function fakeAnswer(o: CompleteOpts): string {
 
 /** Fake article whose wording depends on the prompt, so dry runs of different topics are not near-copies */
 function fakeVariant(prompt: string) {
-  const kw = (prompt.match(/FOCUS KEYWORD: ([^\n(]+)/) || prompt.match(/topic "([^"]+)"/) || [])[1]?.trim() || 'golden visa document checklist';
+  const kw = (prompt.match(/FOCUS KEYWORD: ([^\n(]+)/) || prompt.match(/topic "([^"]+)"/) || [])[1]?.trim() || 'saudi visa document checklist';
   let h = 0;
   for (let i = 0; i < prompt.length; i++) h = (h * 31 + prompt.charCodeAt(i)) >>> 0;
   // synthetic filler words seeded by the prompt: different topics never share wording
@@ -304,29 +304,29 @@ function fakeVariant(prompt: string) {
     seoTitle: `${title}`.slice(0, 60),
     focusKeyword: kw,
     slug: kw.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    contentHtml: sections.map((s, i) => `<h2>${i === 1 ? kw + ' — ' : ''}${s}</h2>${para(i)}${para(i + 9)}`).join('') + '<p>See <a href="/services/golden-visa">Golden Visa services</a>, the <a href="/services/golden-visa-cost">cost calculator</a> and <a href="/apply">apply online</a>.</p>',
+    contentHtml: sections.map((s, i) => `<h2>${i === 1 ? kw + ' — ' : ''}${s}</h2>${para(i)}${para(i + 9)}`).join('') + '<p>See <a href="/visa/tourist">Tourist eVisa</a>, the <a href="/eligibility">eligibility checker</a> and <a href="/apply">apply online</a>.</p>',
   };
 }
 
 export const FAKE_ARTICLE = {
-  title: 'Golden Visa document checklist for families (sample)',
-  seoTitle: 'Golden Visa Document Checklist for Families | RAK Golden Visa',
-  metaDescription: 'A sample article produced in fake mode: the documents a family usually prepares for a UAE Golden Visa, step by step, with common mistakes to avoid.',
-  focusKeyword: 'golden visa document checklist',
-  secondaryKeywords: ['golden visa documents', 'family golden visa'],
-  slug: 'golden-visa-document-checklist-families-sample',
+  title: 'Saudi visa document checklist for families (sample)',
+  seoTitle: 'Saudi Visa Document Checklist for Families | Visit Saudi',
+  metaDescription: 'A sample article produced in fake mode: the documents a family usually prepares for a Saudi visit visa, step by step, with common mistakes to avoid.',
+  focusKeyword: 'saudi visa document checklist',
+  secondaryKeywords: ['saudi visa documents', 'family visit visa'],
+  slug: 'saudi-visa-document-checklist-families-sample',
   excerpt: 'Sample article created in dry-run mode to test the pipeline without spending money.',
   category: 'Process',
-  tags: ['golden visa', 'documents'],
+  tags: ['saudi visa', 'documents'],
   quickAnswer: 'This is a fake-mode sample. Real articles are written by the selected AI provider.',
   contentHtml:
-    '<h2>Golden visa document checklist: what this sample shows</h2><p>The pipeline produced this golden visa document checklist without calling any AI provider, so you can test research, checks and publishing for free.</p><h2>Documents most families prepare</h2><ul><li>Passports and photos</li><li>Attested marriage and birth certificates</li><li>Health insurance</li></ul><p>See <a href="/services/golden-visa">Golden Visa services</a>, the <a href="/services/golden-visa-cost">cost calculator</a> and <a href="/apply">apply online</a>.</p><h2>Common mistakes</h2><p>Names that differ between documents cause most delays.</p><h2>Next steps</h2><p>Talk to a consultant before you submit.</p>',
+    '<h2>Saudi visa document checklist: what this sample shows</h2><p>The pipeline produced this Saudi visa document checklist without calling any AI provider, so you can test research, checks and publishing for free.</p><h2>Documents most families prepare</h2><ul><li>Passports and photos</li><li>Attested marriage and birth certificates</li><li>Health insurance</li></ul><p>See <a href="/visa/tourist">Tourist eVisa</a>, the <a href="/eligibility">eligibility checker</a> and <a href="/apply">apply online</a>.</p><h2>Common mistakes</h2><p>Names that differ between documents cause most delays.</p><h2>Next steps</h2><p>Talk to a consultant before you submit.</p>',
   faq: [
     { q: 'Is this a real article?', a: 'No, it is a dry-run sample.' },
     { q: 'Does fake mode cost anything?', a: 'No, no AI provider is called.' },
     { q: 'Where does a real article go?', a: 'To the review queue or straight to the blog, depending on the mission.' },
   ],
-  internalLinks: [{ anchor: 'Golden Visa services', href: '/services/golden-visa' }],
+  internalLinks: [{ anchor: 'Tourist eVisa', href: '/visa/tourist' }],
   imagePlan: [],
   quality: 92,
   ok: true,

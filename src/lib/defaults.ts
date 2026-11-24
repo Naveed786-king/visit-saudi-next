@@ -111,8 +111,8 @@ export const defaultSite: SiteSettings = {
     titleTemplate: '%s | Visit Saudi',
     defaultTitle: 'Saudi Visit Visas | Visit Saudi - visit-saudi.ae',
     description:
-      'Apply for the RAK Golden Visa through property investment in Ras Al Khaimah. Eligibility, requirements, fees, processing time, benefits and family sponsorship — expert assistance from Brightlink Management Consultancy.',
-    keywords: 'RAK Golden Visa, Ras Al Khaimah Golden Visa, UAE Golden Visa, property investor visa, retirement visa UAE',
+      'Saudi visit visas made simple: tourist eVisa, Umrah, family, business and transit visas, checked by a specialist and tracked at every stage. Visit Saudi, Dubai.',
+    keywords: 'Saudi visa, Saudi eVisa, Saudi tourist visa, Umrah visa, Saudi family visit visa, Saudi business visa, Saudi visa from Dubai',
     ogImage: '',
     googleVerification: '',
     bingVerification: '',
@@ -122,7 +122,7 @@ export const defaultSite: SiteSettings = {
 export const defaultHeader: HeaderSettings = {
   topbar: {
     enabled: true,
-    text: 'VIP Fast-Track: RAK Golden Visa in as little as 48 working hours',
+    text: 'Saudi visa assistance from Dubai - checked by a specialist before submission',
     linkLabel: 'Check eligibility',
     linkHref: '/contact-us',
   },

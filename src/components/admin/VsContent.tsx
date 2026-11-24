@@ -44,7 +44,7 @@ const OTHER_LANGS = Object.keys(LANG_NAMES).filter((l) => l !== 'en');
 const RTL = new Set(['ar', 'ur']);
 const C = '/api/admin/vs-content';
 
-type Tr = { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string; manual?: boolean; at?: string };
+type Tr = { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string; html?: string; manual?: boolean; at?: string };
 type TrMap = Record<string, Tr>;
 
 /* ================================================================ translation engine state */
@@ -193,7 +193,7 @@ export function RichEditor({ value, onChange, dir, minH = 360 }: { value: string
 }
 
 /* ================================================================ language tabs of a page or post */
-type FieldDef = { key: keyof Tr; label: string; long?: boolean; rich?: boolean };
+type FieldDef = { key: keyof Tr; label: string; long?: boolean; rich?: boolean; code?: boolean };
 
 function TranslationsPanel({
   english,
@@ -310,7 +310,7 @@ function TranslationsPanel({
               {f.rich ? (
                 <RichEditor value={v} onChange={set} dir={RTL.has(lang) ? 'rtl' : 'ltr'} minH={260} />
               ) : f.long ? (
-                <textarea dir={RTL.has(lang) ? 'rtl' : 'ltr'} className="admin-input min-h-[70px]" value={v} onChange={(e) => set(e.target.value)} />
+                <textarea dir={RTL.has(lang) ? 'rtl' : 'ltr'} className={cn('admin-input', f.code ? 'min-h-[320px] font-mono text-[11px]' : 'min-h-[70px]')} value={v} onChange={(e) => set(e.target.value)} />
               ) : (
                 <input dir={RTL.has(lang) ? 'rtl' : 'ltr'} className="admin-input" value={v} onChange={(e) => set(e.target.value)} />
               )}
@@ -374,7 +374,7 @@ function Preview({ payload, url }: { payload: any; url?: string }) {
 }
 
 /* ================================================================ POSTS */
-type PostRow = { kind: 'post' | 'guide'; slug: string; title: string; cat: string; excerpt: string; image: string; edited: boolean; published: boolean; date?: string; langs: number };
+type PostRow = { kind: 'post' | 'guide'; slug: string; title: string; cat: string; excerpt: string; image: string; edited: boolean; published: boolean; date?: string; langs: number; auto?: boolean };
 
 export function PostsAdmin() {
   const [d, setD] = useState<{ posts: PostRow[]; cats: string[] } | null>(null);
@@ -406,7 +406,7 @@ export function PostsAdmin() {
     (p) =>
       (!q || (p.title + ' ' + p.cat + ' ' + p.slug).toLowerCase().includes(q.toLowerCase())) &&
       (!cat || p.cat === cat) &&
-      (filter === 'all' || (filter === 'mine' && p.kind === 'post') || (filter === 'guides' && p.kind === 'guide') || (filter === 'hidden' && !p.published) || (filter === 'edited' && p.edited))
+      (filter === 'all' || (filter === 'mine' && p.kind === 'post' && !p.auto) || (filter === 'auto' && !!p.auto) || (filter === 'guides' && p.kind === 'guide') || (filter === 'hidden' && !p.published) || (filter === 'edited' && p.edited))
   );
   async function visibility(p: PostRow, published: boolean) {
     await api(`${C}/post-visibility`, 'POST', { kind: p.kind, slug: p.slug, published });
@@ -433,6 +433,7 @@ export function PostsAdmin() {
           <select className="admin-input !w-auto" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">All</option>
             <option value="mine">New posts</option>
+            <option value="auto">Auto Publisher</option>
             <option value="guides">Built-in guides</option>
             <option value="edited">Edited guides</option>
             <option value="hidden">Hidden</option>
@@ -461,7 +462,8 @@ export function PostsAdmin() {
                     {p.date ? ' · ' + p.date : ''}
                   </p>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {p.kind === 'post' && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">new post</span>}
+                    {p.kind === 'post' && !p.auto && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">new post</span>}
+                    {p.auto && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">Auto Publisher</span>}
                     {p.edited && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">edited</span>}
                     {!p.published && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-600">hidden</span>}
                     <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold', p.langs >= 18 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600')}>{p.langs + 1}/19 languages</span>
@@ -522,6 +524,13 @@ const POST_FIELDS: FieldDef[] = [
   { key: 'excerpt', label: 'Summary', long: true },
   { key: 'body', label: 'Text', rich: true },
 ];
+// an article of the Auto Publisher is finished HTML
+const HTML_POST_FIELDS: FieldDef[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'cat', label: 'Category' },
+  { key: 'excerpt', label: 'Summary', long: true },
+  { key: 'html', label: 'Text (HTML)', long: true, code: true },
+];
 
 function PostEditor({ kind, slug, cats, engine, onClose }: { kind: 'post' | 'guide'; slug?: string; cats: string[]; engine: { provider: string; problem: string } | null; onClose: () => void }) {
   const [p, setP] = useState<any>(slug ? null : { title: '', slug: '', cat: 'News', excerpt: '', image: '', body: '', published: true, date: new Date().toISOString().slice(0, 10), tr: {} });
@@ -535,7 +544,7 @@ function PostEditor({ kind, slug, cats, engine, onClose }: { kind: 'post' | 'gui
     if (!slug) return;
     api(`${C}/post?kind=${kind}&slug=${slug}`).then((d) => {
       setP({ ...d.post, tr: d.post.tr || {} });
-      english.current = JSON.stringify([d.post.title, d.post.cat, d.post.excerpt, d.post.body]);
+      english.current = JSON.stringify([d.post.title, d.post.cat, d.post.excerpt, d.post.body, d.post.html]);
     });
   }, [kind, slug]);
   if (!p) return <Spinner />;
@@ -549,7 +558,7 @@ function PostEditor({ kind, slug, cats, engine, onClose }: { kind: 'post' | 'gui
       setOldSlug(saved);
       setP((x: any) => ({ ...x, slug: saved }));
       toast('Saved — live on the website');
-      const now = JSON.stringify([p.title, p.cat, p.excerpt, p.body]);
+      const now = JSON.stringify([p.title, p.cat, p.excerpt, p.body, p.html]);
       // English changed: the other languages follow (languages changed by hand are kept)
       if (autoTr && !engine?.problem && now !== english.current) {
         english.current = now;
@@ -557,7 +566,7 @@ function PostEditor({ kind, slug, cats, engine, onClose }: { kind: 'post' | 'gui
         await run(
           OTHER_LANGS.filter((l) => !next[l]?.manual),
           async (l) => {
-            const d = await api(`${C}/translate`, 'POST', { kind: 'fields', lang: l, fields: { title: p.title, cat: p.cat, excerpt: p.excerpt, body: p.body } });
+            const d = await api(`${C}/translate`, 'POST', { kind: 'fields', lang: l, fields: { title: p.title, cat: p.cat, excerpt: p.excerpt, body: p.body, html: p.html } });
             if (!d.ok) throw new Error(d.error);
             next[l] = d.tr;
             setP((x: any) => ({ ...x, tr: { ...next } }));
@@ -612,12 +621,22 @@ function PostEditor({ kind, slug, cats, engine, onClose }: { kind: 'post' | 'gui
                   <textarea className="admin-input min-h-[70px]" value={p.excerpt} onChange={(e) => set('excerpt', e.target.value)} />
                 </div>
                 <div>
-                  <label className="admin-label">Text</label>
-                  <RichEditor value={p.body} onChange={(v) => set('body', v)} />
+                  <label className="admin-label">Text{typeof p.html === 'string' ? ' (HTML, written by the Auto Publisher)' : ''}</label>
+                  {typeof p.html === 'string' ? (
+                    <textarea spellCheck={false} className="admin-input min-h-[420px] font-mono text-[12px] leading-snug" value={p.html} onChange={(e) => set('html', e.target.value)} />
+                  ) : (
+                    <RichEditor value={p.body} onChange={(v) => set('body', v)} />
+                  )}
                 </div>
               </div>
             </Card>
-            <TranslationsPanel english={{ title: p.title, cat: p.cat, excerpt: p.excerpt, body: p.body }} fields={POST_FIELDS} tr={p.tr || {}} setTr={(t) => set('tr', t)} engine={engine} />
+            <TranslationsPanel
+              english={{ title: p.title, cat: p.cat, excerpt: p.excerpt, body: p.body, html: p.html || '' }}
+              fields={typeof p.html === 'string' ? HTML_POST_FIELDS : POST_FIELDS}
+              tr={p.tr || {}}
+              setTr={(t) => set('tr', t)}
+              engine={engine}
+            />
           </div>
           <div className="space-y-5">
             <Card title="Settings">

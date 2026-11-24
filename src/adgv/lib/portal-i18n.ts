@@ -2,6 +2,7 @@
 // English is the source; other languages are in portal-i18n-langs.ts. Native-speaker review is recommended.
 import { OTHER } from './portal-i18n-langs';
 import { BRAND_NAME, DEFAULT_BRAND, brandText } from '@/adgv/lib/brand';
+import { VS_PORTAL } from '@/adgv/lib/portal-i18n-vs';
 
 export const EN = {
   signIn: 'Sign in', backToSite: 'Back to website', welcomeBack: 'Welcome back', enterDetails: 'Enter your email and password to continue.',
@@ -71,7 +72,10 @@ export function dict(code?: string | null): Dict {
   const c = code === 'at' ? 'de' : code || 'en';
   const o = OTHER[c];
   const d = o ? { ...EN, ...o, stages: o.stages ?? EN.stages } : EN;
-  return BRAND_NAME === DEFAULT_BRAND ? d : { ...d, leftEyebrow: brandText(d.leftEyebrow) };
+  const base = BRAND_NAME === DEFAULT_BRAND ? d : { ...d, leftEyebrow: brandText(d.leftEyebrow) };
+  // Visit Saudi wording (Saudi visas, not residency) in the visitor's language
+  const vs = VS_PORTAL[c] || VS_PORTAL.en;
+  return { ...base, ...vs };
 }
 export function langInfo(code?: string | null) {
   return PORTAL_LANGS.find((l) => l.code === code) ?? PORTAL_LANGS[0];

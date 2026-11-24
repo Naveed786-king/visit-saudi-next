@@ -61,7 +61,7 @@ export async function coverText(input: { title: string; summary?: string; headin
   const fb = fallbackText(input.title, headings);
   try {
     const r = await completeJson<any>({
-      system: 'You are the cover designer of a UAE visa and residency consultancy blog. You write the few words that go on a designed article cover. Short, specific, honest.',
+      system: 'You are the cover designer of a Saudi visa and travel blog. You write the few words that go on a designed article cover. Short, specific, honest.',
       prompt: `ARTICLE TITLE: ${input.title}
 ${input.summary ? `WHAT IT SAYS: ${String(input.summary).slice(0, 700)}\n` : ''}SECTIONS: ${headings.slice(0, 12).join(' | ') || '—'}
 COMPANY FACTS (the only claims about us you may use):

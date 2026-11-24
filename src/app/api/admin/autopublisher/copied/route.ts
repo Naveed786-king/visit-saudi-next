@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { syncAutoPosts } from '@/lib/vs/autopost';
 import { ok, fail, refreshSite } from '@/lib/api';
 import { requireAdmin } from '@/lib/auth';
 import { COPIED_SLUGS } from '@/lib/autopublisher/copied-slugs';
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
   const ids = (await findCopies(COPIED_SLUGS)).map((f) => f.id);
   const res = await prisma.post.updateMany({ where: { id: { in: ids }, status: from }, data: { status: to } });
   await autoLog('info', `Copied posts: ${res.count} moved to ${to} by ${s.email}`);
+  await syncAutoPosts().catch(() => null);
   refreshSite();
   return ok({ changed: res.count });
 }

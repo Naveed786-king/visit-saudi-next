@@ -17,6 +17,7 @@ jobs:
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: CiPassword123
       UPLOAD_DIR: uploads
+      CHATBOT_FAKE_AI: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -101,6 +102,8 @@ jobs:
           check /does-not-exist 404
       - name: Pages, posts and translations (add, change, hide, delete - and back)
         run: bash scripts/ci/content-tests.sh
+      - name: AI assistant and Auto Publisher posts (fake AI)
+        run: bash scripts/ci/ai-tests.sh
       - name: Pages still identical after the admin tests
         run: sleep 6 && node scripts/ci/compare-pages.mjs http://localhost:3000 http://localhost:8324
       - name: Server log

@@ -151,7 +151,7 @@ function PortalTab() {
       <div className="grid gap-4 p-5 md:grid-cols-2">
         <div className="md:col-span-2">
           <Field label="Dashboard address" hint="e.g. https://app.visit-saudi.ae — set this only after the subdomain works (DNS + SSL in xCloud). Empty: clients use goldenvisauae.ai/account.">
-            <input className="admin-input" value={v.url} onChange={(e) => set('url', e.target.value)} placeholder="https://app.rakgoldenvisa.com" />
+            <input className="admin-input" value={v.url} onChange={(e) => set('url', e.target.value)} placeholder="https://app.visit-saudi.ae" />
           </Field>
         </div>
         <Field label="Default advisor name" hint="Shown to clients whose file has no advisor of its own.">
@@ -675,7 +675,7 @@ function AdminNotifyCard() {
     <Card title="Email me the admin notifications" className="p-0">
       <div className="space-y-3 p-5">
         <Field label="Send to (one or more addresses)">
-          <textarea className="admin-input min-h-[56px]" value={v.notifyEmail || ''} onChange={(e) => setValue({ ...v, notifyEmail: e.target.value })} placeholder="info@rakgoldenvisa.com" />
+          <textarea className="admin-input min-h-[56px]" value={v.notifyEmail || ''} onChange={(e) => setValue({ ...v, notifyEmail: e.target.value })} placeholder="info@visit-saudi.ae" />
         </Field>
         <div className="flex flex-wrap gap-4">
           {kinds.map(([k, l]) => <Toggle key={k} checked={on[k] !== false} onChange={(x) => setValue({ ...v, notifyOn: { ...on, [k]: x } })} label={l} />)}

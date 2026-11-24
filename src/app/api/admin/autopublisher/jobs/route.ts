@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { mirrorAutoPost, unmirrorAutoPost } from '@/lib/vs/autopost';
 import { ok, fail, refreshSite } from '@/lib/api';
 import { requireAdmin } from '@/lib/auth';
 import { ACTIVE_STAGES, STAGE_ORDER, afterPublish, applyUpdate, assemble, createJob, restoreBackup, savePost, tick } from '@/lib/autopublisher/pipeline';
@@ -153,7 +154,8 @@ export async function POST(req: Request) {
       const post = await prisma.post.findUnique({ where: { id: job.postId } });
       if (!post) return fail('Post was deleted', 404);
       if (action === 'edit') return ok({ postId: post.id });
-      await prisma.post.update({ where: { id: post.id }, data: { status: 'published', publishedAt: new Date() } });
+      const live = await prisma.post.update({ where: { id: post.id }, data: { status: 'published', publishedAt: new Date() } });
+      await mirrorAutoPost(live).catch(() => null);
       await afterPublish(post.id, post.slug);
       d.publishedMode = 'publish';
       await prisma.autoJob.update({ where: { id: job.id }, data: { stage: 'done', data: JSON.stringify(d) } });
@@ -173,6 +175,7 @@ export async function POST(req: Request) {
       const post = await prisma.post.findUnique({ where: { id: job.postId } });
       if (post && post.status === 'draft') {
         await prisma.post.delete({ where: { id: post.id } });
+        await unmirrorAutoPost(post.id).catch(() => null);
         await prisma.autoFingerprint.deleteMany({ where: { kind: 'post', refId: post.id } });
         refreshSite();
       }

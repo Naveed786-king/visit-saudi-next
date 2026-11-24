@@ -13,9 +13,26 @@ export type VsSite = {
 };
 export type VsBlogPost = { slug: string; title: string; cat: string; excerpt: string; body: string; image: string; date: string; published: boolean };
 /** Translation of a page or post into one language; manual = changed by hand (not replaced by "translate again") */
-export type VsTr = { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string; manual?: boolean; at?: string };
+export type VsTr = { title?: string; subtitle?: string; crumb?: string; cat?: string; excerpt?: string; description?: string; body?: string; html?: string; manual?: boolean; at?: string };
 /** A post added in the admin (shown with the guides, own page /guides/<slug>) */
-export type VsPost = { slug: string; title: string; cat: string; excerpt: string; image: string; body: string; date: string; published: boolean; updatedAt?: string; tr?: Record<string, VsTr> };
+export type VsPost = {
+  slug: string;
+  title: string;
+  cat: string;
+  excerpt: string;
+  image: string;
+  /** text in the editor format */
+  body: string;
+  /** or a finished HTML article (written by the Auto Publisher); then translations carry html too */
+  html?: string;
+  date: string;
+  published: boolean;
+  updatedAt?: string;
+  /** Auto Publisher post this one comes from */
+  autoId?: string;
+  seoTitle?: string;
+  tr?: Record<string, VsTr>;
+};
 /** A page added in the admin: "simple" = written in the editor, "html" = a full page (e.g. a copy of an existing page) */
 export type VsPage = {
   slug: string;
