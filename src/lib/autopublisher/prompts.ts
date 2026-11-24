@@ -18,7 +18,7 @@ export async function companyFacts(cfg: AutoConfig) {
   // our published prices (Admin → Services & prices)
   // our published totals (Admin → Visa prices & pay online)
   const site = await getVs('vs.site').catch(() => null);
-  const fees = Object.entries(site?.prices || {})
+  const fees = Object.entries((site?.prices || {}) as Record<string, { amount: number; currency: string }>)
     .filter(([, v]) => v && Number(v.amount) > 0)
     .map(([k, v]) => `${VISA_LABELS[k] || k}: ${v.currency} ${v.amount} full total (official Saudi fee incl. medical insurance + our service fee)`)
     .join('\n');

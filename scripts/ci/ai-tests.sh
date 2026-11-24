@@ -12,7 +12,7 @@ sleep 16
 P=$(curl -sf "$B/")
 echo "$P" | grep -q '<script src="/vs-chat.js' || fail "chat script missing when switched on"
 echo "$P" | grep -q 'window.VS_CHAT=' || fail "chat settings missing"
-curl -sf "$B/ar/" | grep -q 'السلام عليكم' || fail "Arabic greeting"
+curl -sfL "$B/ar/" | grep -q 'السلام عليكم' || fail "Arabic greeting"
 curl -sf "$B/vs-chat.js" | grep -q 'chatPanel' || fail "chat script file"
 R=$(curl -sf -X POST "$B/api/chat" -H 'Content-Type: application/json' -d '{"message":"Which visa do I need for Umrah?","locale":"en","page":"/"}') || fail "chat reply"
 echo "chat: $R"
