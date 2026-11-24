@@ -15,12 +15,14 @@ export default async function Dashboard() {
     prisma.application.count(),
     prisma.application.count({ where: { status: { notIn: ['completed', 'rejected', 'cancelled'] } } }),
     prisma.user.count({ where: { role: 'CUSTOMER' } }),
-    prisma.post.count(),
+    prisma.vsEvent.count({ where: { t: 'view', day: { gte: new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10) } } }),
     prisma.lead.findMany({ orderBy: { createdAt: 'desc' }, take: 6 }),
     prisma.application.findMany({ orderBy: { updatedAt: 'desc' }, take: 6 }),
     prisma.lead.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.application.groupBy({ by: ['status'], _count: { _all: true } }),
-    prisma.post.findMany({ orderBy: { views: 'desc' }, take: 5, select: { id: true, title: true, views: true, slug: true } }),
+    prisma.vsEvent
+      .groupBy({ by: ['path'], where: { t: 'view', day: { gte: new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10) } }, _count: { _all: true }, orderBy: { _count: { path: 'desc' } }, take: 6 })
+      .then((rows) => rows.map((r) => ({ path: r.path || '/', n: r._count._all }))),
   ]);
 
   const days = Array.from({ length: 14 }).map((_, i) => {
@@ -31,10 +33,10 @@ export default async function Dashboard() {
   const max = Math.max(1, ...days.map((d) => d.count));
 
   const cards = [
-    { label: 'Total leads', value: leadCount, sub: `${newLeads} new`, icon: Inbox, href: '/admin/leads', color: 'from-blue-500 to-blue-600' },
+    { label: 'Enquiries', value: leadCount, sub: `${newLeads} new`, icon: Inbox, href: '/admin/leads', color: 'from-blue-500 to-blue-600' },
     { label: 'Applications', value: appCount, sub: `${activeApps} in progress`, icon: FolderKanban, href: '/admin/applications', color: 'from-amber-500 to-orange-500' },
     { label: 'Customers', value: customers, sub: 'registered clients', icon: Users, href: '/admin/customers', color: 'from-emerald-500 to-teal-500' },
-    { label: 'Blog posts', value: posts, sub: 'published articles', icon: Newspaper, href: '/admin/posts', color: 'from-violet-500 to-purple-600' },
+    { label: 'Website visits', value: posts, sub: 'page views, last 30 days', icon: Newspaper, href: '/admin/site-stats', color: 'from-violet-500 to-purple-600' },
   ];
 
   return (
@@ -50,8 +52,8 @@ export default async function Dashboard() {
             <p className="mt-1 text-sm text-white/60">Here is what is happening with your website today.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/pages" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><FileText className="h-4 w-4" /> Edit pages</Link>
-            <Link href="/admin/header" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><PanelTop className="h-4 w-4" /> Menu</Link>
+            <Link href="/admin/site-pages" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><FileText className="h-4 w-4" /> Pages & styling</Link>
+            <Link href="/admin/site-texts" className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/20"><PanelTop className="h-4 w-4" /> Website texts</Link>
             <Link href="/admin/settings" className="inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-ink hover:brightness-105"><Settings className="h-4 w-4" /> Settings</Link>
           </div>
         </div>
@@ -151,12 +153,12 @@ export default async function Dashboard() {
       </div>
 
       <div className="rounded-2xl bg-white ring-1 ring-gray-200/70">
-        <div className="border-b border-gray-100 px-5 py-3.5"><h3 className="text-sm font-bold">Most read articles</h3></div>
+        <div className="border-b border-gray-100 px-5 py-3.5"><h3 className="text-sm font-bold">Most visited pages (30 days)</h3></div>
         <ul className="divide-y divide-gray-50">
           {topPosts.map((p) => (
-            <li key={p.id} className="flex items-center justify-between gap-3 px-5 py-3">
-              <Link href={`/admin/posts/${p.id}`} className="truncate text-sm font-semibold hover:text-gold-deep">{p.title}</Link>
-              <span className="flex shrink-0 items-center gap-1 text-xs text-gray-500"><Eye className="h-3.5 w-3.5" /> {p.views}</span>
+            <li key={p.path} className="flex items-center justify-between gap-3 px-5 py-3">
+              <a href={p.path || '/'} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-semibold hover:text-gold-deep">{p.path || '/'}</a>
+              <span className="flex shrink-0 items-center gap-1 text-xs text-gray-500"><Eye className="h-3.5 w-3.5" /> {p.n}</span>
             </li>
           ))}
         </ul>
