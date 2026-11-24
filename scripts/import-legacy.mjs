@@ -1,6 +1,7 @@
 // Moves the data of the old visit-saudi.ae app (its DATA_DIR folder) into this app's database.
 //   node scripts/import-legacy.mjs /home/visit_saudi/vsa-data          -> dry run: only counts
 //   node scripts/import-legacy.mjs /home/visit_saudi/vsa-data --write  -> import
+//   add --no-email on a test copy: the old email settings are not taken over
 // Safe to run again: applications already imported (same VSA reference) are skipped, stores are replaced.
 // Nothing in the old folder is changed or deleted.
 import fs from 'fs';
@@ -24,6 +25,8 @@ const bcrypt = require('bcryptjs');
 
 const DATA = process.argv[2];
 const WRITE = process.argv.includes('--write');
+// --no-email: leave the email (SMTP) settings out, e.g. on a test copy, so it never emails real customers
+const NO_EMAIL = process.argv.includes('--no-email');
 if (!DATA || !fs.existsSync(DATA)) {
   console.error('Usage: node scripts/import-legacy.mjs <old DATA_DIR> [--write]');
   process.exit(1);
@@ -174,7 +177,7 @@ async function main() {
   if (settings) {
     await setStore('vs.site', { whatsapp: settings.whatsapp || '971566556645', email: settings.email || 'info@visit-saudi.ae', notifyEmail: settings.notifyEmail || '', prices: settings.prices || {}, payments: { enabled: !!settings.payments?.enabled, provider: settings.payments?.provider || '' } });
     // the old email (SMTP) settings → Admin → Settings & email
-    if (WRITE && settings.smtp?.host) {
+    if (WRITE && !NO_EMAIL && settings.smtp?.host) {
       const row = await prisma.setting.findUnique({ where: { key: 'smtp' } });
       const cur = row ? JSON.parse(row.value) : {};
       const smtp = { ...cur, host: settings.smtp.host, port: Number(settings.smtp.port) || 587, secure: Number(settings.smtp.port) === 465, user: settings.smtp.user, pass: settings.smtp.pass || cur.pass || '', from: settings.smtp.from || settings.smtp.user, notifyEmail: settings.notifyEmail || cur.notifyEmail || '' };

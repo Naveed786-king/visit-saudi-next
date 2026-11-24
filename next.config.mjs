@@ -19,6 +19,10 @@ const nextConfig = {
   },
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
+  // a test copy on staging.<domain> stays out of Google (the real site is unaffected)
+  async headers() {
+    return [{ source: '/:path*', has: [{ type: 'host', value: 'staging\\..*' }], headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
+  },
   // Let's Encrypt SSL check files (free https certificate on xCloud / VPS)
   async rewrites() {
     return { beforeFiles: [{ source: '/.well-known/acme-challenge/:token', destination: '/api/acme-challenge/:token' }] };
