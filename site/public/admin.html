@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin | Visit Saudi</title>
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Marcellus&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<style>
+.admin-wrap{max-width:1240px;margin:0 auto;padding:28px 20px 70px}
+.login-box{max-width:400px;margin:8vh auto;border:1px solid var(--line);border-radius:18px;padding:32px;background:#fff;box-shadow:var(--shadow)}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:18px 0}
+.stat{background:var(--sand);border-radius:14px;padding:16px}
+.stat b{font-family:var(--font-display);font-size:1.6rem;display:block;color:var(--green-ink)}
+.stat.warn{background:#fdf3e0}.stat.warn b{color:#9a6b12}
+table.apps{width:100%;border-collapse:collapse;font-size:.93rem}
+table.apps th,table.apps td{text-align:left;padding:10px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+table.apps tr:hover td{background:#fbf8f0}
+.stage-chip{display:inline-block;background:var(--green);color:#fff;border-radius:99px;padding:2px 11px;font-size:.78rem;font-weight:700}
+.detail-row td{background:#fbf8f0}
+.pill-btn{background:none;border:1.5px solid var(--green);color:var(--green);border-radius:99px;padding:5px 14px;font-weight:700;cursor:pointer;font-size:.85rem}
+.pill-btn:hover{background:var(--green);color:#fff}
+.hist{font-size:.86rem;color:var(--muted);margin-top:8px}
+.hist li{margin-bottom:4px}
+.shell{display:grid;grid-template-columns:208px 1fr;gap:24px;align-items:start;margin-top:18px}
+.sidenav{position:sticky;top:16px;display:flex;flex-direction:column;gap:6px}
+.sidenav button{text-align:left;border:1.5px solid transparent;background:transparent;padding:10px 14px;border-radius:12px;font-weight:700;font-size:.95rem;color:var(--green-ink);cursor:pointer;font-family:inherit}
+.sidenav button:hover{background:var(--sand)}
+.sidenav button.active{background:var(--green);color:#fff}
+.sidenav .navsep{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:12px 14px 2px}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.sidenav{position:static;flex-direction:row;flex-wrap:wrap}.sidenav .navsep{width:100%}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:6px 0 18px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.kpi b{font-family:var(--font-display);font-size:1.9rem;color:var(--green-ink);display:block;line-height:1.05}
+.kpi span{color:var(--muted);font-size:.88rem}
+.kpi.hot{border-color:#e8c87a;background:#fffaf0}
+.panelbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:20px}
+.panelbox h3{margin-bottom:12px}
+.funnel{display:flex;flex-direction:column;gap:8px}
+.frow{display:grid;grid-template-columns:170px 1fr 44px;gap:10px;align-items:center;font-size:.9rem}
+.fbar{height:14px;background:var(--sand);border-radius:99px;overflow:hidden}
+.fbar i{display:block;height:100%;background:var(--green);border-radius:99px}
+.attn{display:flex;flex-direction:column;gap:9px}
+.attn .aitem{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-left:4px solid #d9a62e;border-radius:11px;padding:10px 13px;font-size:.92rem;background:#fffdf6}
+.attn .aitem button{margin-left:auto;flex:none}
+.boardwrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:14px;align-items:flex-start}
+.bcol{flex:0 0 272px;background:#faf7ef;border:1px solid var(--line);border-radius:15px;padding:12px;min-height:180px}
+.bcol.dragover{outline:2px dashed var(--green);outline-offset:-4px}
+.bcol h4{font-size:.9rem;margin:2px 2px 10px;display:flex;justify-content:space-between}
+.bcol h4 .cnt{background:var(--green);color:#fff;border-radius:99px;padding:0 9px;font-size:.78rem}
+.bcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:10px;cursor:grab;box-shadow:0 1px 3px rgba(20,40,25,.06)}
+.bcard:active{cursor:grabbing}
+.bcard .r{font-weight:800;color:var(--green-ink);font-size:.86rem}
+.bcard .n{font-weight:700;margin:2px 0}
+.bcard .m{color:var(--muted);font-size:.83rem}
+.bcard .ft{display:flex;gap:6px;margin-top:9px;align-items:center}
+.bcard .mv{border:1px solid var(--line);background:var(--sand);border-radius:8px;width:26px;height:24px;cursor:pointer;font-weight:800;line-height:1}
+.unread{display:inline-block;width:9px;height:9px;border-radius:50%;background:#d9534f;margin-left:5px;vertical-align:middle}
+.docprev{max-width:150px;max-height:110px;border-radius:9px;border:1px solid var(--line);display:block;margin:4px 0}
+.tagchip{display:inline-block;background:var(--sand);border-radius:99px;padding:1px 9px;font-size:.76rem;font-weight:700;margin-right:5px}
+textarea.ta{width:100%;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;font-family:inherit;font-size:.93rem;background:#fff}
+select.inp,input.inp{border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;font-family:inherit;font-size:.93rem;background:#fff;width:100%}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
+.mgrid figure{border:1px solid var(--line);border-radius:12px;padding:9px;margin:0;background:#fff}
+.mgrid img{width:100%;height:104px;object-fit:cover;border-radius:8px}
+.mgrid figcaption{font-size:.75rem;color:var(--muted);word-break:break-all;margin:7px 0}
+.daybars{display:flex;gap:5px;align-items:flex-end;height:110px;margin-top:8px}
+.daybars .db{flex:1;background:var(--green);border-radius:5px 5px 0 0;min-height:3px;position:relative}
+.daybars .db span{position:absolute;bottom:-19px;left:50%;transform:translateX(-50%);font-size:.66rem;color:var(--muted);white-space:nowrap}
+.okmsg{color:var(--green);font-weight:700}
+.small-note{color:var(--muted);font-size:.88rem}
+.rolebadge{background:#eef6ea;color:var(--green-ink);border-radius:99px;padding:3px 12px;font-weight:800;font-size:.8rem}
+.bfbtn.on{background:var(--green);color:#fff;border-color:var(--green)}
+</style></head>
+<body>
+<div class="admin-wrap">
+<div id="loginView">
+  <div class="login-box">
+    <img src="assets/img/logo-mark.svg" alt="" style="width:56px;height:56px;margin-bottom:12px"><h2 style="margin-bottom:6px">Visit Saudi - Admin</h2>
+    <p style="color:var(--muted);font-size:.93rem;margin-bottom:18px">Sign in to manage applications and enquiries.</p>
+    <div class="field"><label class="f" for="a-user">Username</label><input id="a-user" value="admin" autocomplete="username"></div>
+    <div class="field"><label class="f" for="a-pass">Password</label><input id="a-pass" type="password" autocomplete="current-password"></div>
+    <p class="err" id="loginErr" style="margin-bottom:10px"></p>
+    <button class="btn" id="loginBtn" style="width:100%;justify-content:center">Sign In</button>
+  </div>
+</div>
+
+<div id="dashView" style="display:none">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <h2 style="margin:0">Visit Saudi Admin</h2>
+    <span class="rolebadge" id="roleBadge" style="display:none"></span>
+    <span style="margin-left:auto;display:flex;gap:9px">
+      <button class="pill-btn" id="refreshBtn">Refresh</button>
+      <button class="pill-btn" id="logoutBtn">Sign out</button>
+    </span>
+  </div>
+
+  <div class="shell">
+    <nav class="sidenav" id="sideNav">
+      <button data-tab="dash" class="active">Dashboard</button>
+      <button data-tab="quick">Quick edits</button>
+      <button data-tab="board">Pipeline board</button>
+      <button data-tab="apps">Applications</button>
+      <button data-tab="enq">Enquiries <span id="enqCount"></span></button>
+      <button data-tab="new">+ New application</button>
+      <div class="navsep">Customers</div>
+      <button data-tab="customers">Customers</button>
+      <button data-tab="stats">Analytics</button>
+      <div class="navsep" data-adminonly>Website</div>
+      <button data-tab="blog" data-adminonly>Blog manager</button>
+      <button data-tab="reviews" data-adminonly>Reviews</button>
+      <button data-tab="prices" data-adminonly>Prices</button>
+      <button data-tab="content" data-adminonly>Content editor</button>
+      <button data-tab="media" data-adminonly>Media library</button>
+      <div class="navsep" data-adminonly>System</div>
+      <button data-tab="settings" data-adminonly>Settings &amp; email</button>
+      <button data-tab="backup" data-adminonly>Backup &amp; team</button>
+    </nav>
+
+    <main id="mainCol">
+      <!-- DASHBOARD -->
+      <section id="pane-dash">
+        <div class="kpis" id="kpiRow"></div>
+        <div class="panelbox"><h3>Needs attention</h3><div class="attn" id="attnList"></div></div>
+        <div class="panelbox"><h3>Pipeline funnel</h3><div class="funnel" id="funnelBox"></div></div>
+        <div class="panelbox"><h3>Latest applications</h3><div id="latestApps"></div></div>
+      </section>
+
+
+      <!-- QUICK EDITS -->
+      <section id="pane-quick" style="display:none">
+        <div class="panelbox">
+          <h3>Contact details</h3>
+          <p class="small-note" style="margin-bottom:12px">These update across the whole website - every WhatsApp button and link, the chatbot, the consultation form and the email links - as soon as you save. No rebuild needed.</p>
+          <div class="grid2">
+            <div class="field"><label class="f" for="q-whatsapp">WhatsApp number (digits, with country code)</label><input id="q-whatsapp"></div>
+            <div class="field"><label class="f" for="q-email">Public email</label><input id="q-email"></div>
+          </div>
+          <button class="btn" id="qSaveContacts">Save contact details</button> <span class="okmsg" id="qContactsSaved"></span>
+        </div>
+        <div class="panelbox">
+          <h3>Announcement ticker</h3>
+          <p class="small-note" style="margin-bottom:12px">The scrolling gold line at the top of every page. Edit any line and save - handy for seasonal messages (Hajj season, holiday hours, a new service).</p>
+          <div id="qTickerRows"></div>
+          <button class="btn" id="qSaveTicker">Save ticker</button> <span class="okmsg" id="qTickerSaved"></span>
+        </div>
+        <div class="panelbox">
+          <h3>Offer pop-up &amp; homepage headline</h3>
+          <p class="small-note" style="margin-bottom:12px">The pop-up that offers a free eligibility check, and the big headline on the homepage.</p>
+          <div id="qOfferRows"></div>
+          <div id="qHeroRows"></div>
+          <button class="btn" id="qSaveTexts">Save texts</button> <span class="okmsg" id="qTextsSaved"></span>
+        </div>
+        <div class="panelbox">
+          <h3>Everything else</h3>
+          <p class="small-note">Any other text on any page - visa descriptions, FAQs, guide articles, buttons - can be changed in the <b>Content editor</b> (search for the current wording). Quick edits change the English site straight away; other languages keep their existing translation of that text until it is edited in that language too.</p>
+        </div>
+      </section>
+
+      <!-- BOARD -->
+      <section id="pane-board" style="display:none">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <input class="inp" id="boardQ" placeholder="Search name, reference, passport..." style="max-width:300px">
+          <select class="inp" id="boardVisa" style="max-width:220px"><option value="">All visa types</option></select>
+          <span class="small-note" style="align-self:center;flex:1 1 300px">Drag a card to move it to a new stage - the client tracking page and the applicant email update automatically. Use the arrows on a card if dragging is awkward.</span>
+        </div>
+        <div class="boardwrap" id="boardWrap"></div>
+      </section>
+
+      <!-- APPLICATIONS -->
+      <section id="pane-apps" style="display:none">
+        <div class="stat-row" id="statRow"></div>
+        <div style="overflow-x:auto"><table class="apps"><thead><tr>
+          <th>Reference</th><th>Applicant</th><th>Visa</th><th>Travel</th><th>Stage</th><th>Received</th><th></th>
+        </tr></thead><tbody id="appsBody"></tbody></table></div>
+        <p id="appsEmpty" style="color:var(--muted);display:none">No applications yet. New website applications will appear here.</p>
+      </section>
+
+      <!-- ENQUIRIES -->
+      <section id="pane-enq" style="display:none">
+        <div id="enqList"></div>
+        <p id="enqEmpty" style="color:var(--muted);display:none">No enquiries yet.</p>
+      </section>
+
+      <!-- NEW APPLICATION -->
+      <section id="pane-new" style="display:none;max-width:560px">
+        <p style="color:var(--muted);margin-bottom:14px">Create an application manually - for clients who applied by phone or WhatsApp. They can track it straight away with the reference and their passport number.</p>
+        <div class="grid2">
+          <div class="field"><label class="f" for="n-name">Full name</label><input id="n-name"></div>
+          <div class="field"><label class="f" for="n-pass">Passport number</label><input id="n-pass"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label class="f" for="n-nat">Nationality</label><input id="n-nat"></div>
+          <div class="field"><label class="f" for="n-visa">Visa type</label><select id="n-visa"><option value="tourist">Tourist eVisa</option><option value="family">Family &amp; Friends</option><option value="umrah">Umrah</option><option value="business">Business Visit</option><option value="medical">Medical</option><option value="personal">Personal Visit</option><option value="transit">Stopover Transit</option><option value="work">Employment Guidance</option><option value="hajj">Hajj Guidance</option></select></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label class="f" for="n-email">Email</label><input id="n-email" type="email"></div>
+          <div class="field"><label class="f" for="n-phone">Phone / WhatsApp</label><input id="n-phone"></div>
+        </div>
+        <div class="field"><label class="f" for="n-entry">Entry date</label><input id="n-entry" type="date"></div>
+        <p class="err" id="newErr" style="margin-bottom:10px"></p>
+        <button class="btn" id="createBtn">Create Application</button>
+        <p id="newDone" style="margin-top:12px;color:var(--green);font-weight:700"></p>
+      </section>
+
+      <!-- CUSTOMERS -->
+      <section id="pane-customers" style="display:none">
+        <p class="small-note" style="margin-bottom:14px">Every applicant grouped by email - their full application history and your private notes in one place.</p>
+        <div id="custList"></div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section id="pane-stats" style="display:none">
+        <div class="kpis" id="statsKpis"></div>
+        <div class="panelbox"><h3>Page views - last 14 days</h3><div class="daybars" id="dayBars"></div><div style="height:22px"></div></div>
+        <div class="grid2">
+          <div class="panelbox"><h3>Most viewed pages</h3><div id="topPages"></div></div>
+          <div class="panelbox"><h3>Eligibility checker - top nationalities</h3><div id="topNats"></div></div>
+        </div>
+      </section>
+
+      <!-- BLOG -->
+      <section id="pane-blog" style="display:none">
+        <div id="blogListView">
+          <div class="panelbox">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <h3 style="margin:0">All posts &amp; guides</h3>
+              <button class="btn" id="blogAddNew" type="button" style="margin-left:auto">+ Add new post</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px" id="blogFilters">
+              <button class="pill-btn bfbtn on" data-bf="all" type="button">All</button>
+              <button class="pill-btn bfbtn" data-bf="guide" type="button">Guides</button>
+              <button class="pill-btn bfbtn" data-bf="team" type="button">Team posts</button>
+              <button class="pill-btn bfbtn" data-bf="edited" type="button">Edited</button>
+              <button class="pill-btn bfbtn" data-bf="hidden" type="button">Hidden / drafts</button>
+            </div>
+            <input class="inp" id="g-q" placeholder="Search posts and guides..." autocomplete="off" style="max-width:420px;margin-bottom:8px">
+            <div id="blogList"></div>
+          </div>
+        </div>
+        <div id="blogEditorView" style="display:none">
+          <button class="pill-btn" id="blogBack" type="button" style="margin-bottom:12px">&larr; All posts &amp; guides</button>
+          <div class="panelbox">
+            <h3 id="blogFormTitle">Write a post</h3>
+            <p class="small-note" id="b-permalink" style="margin-bottom:12px"></p>
+            <div class="form2">
+              <div class="field"><label>Title</label><input class="inp" id="b-title"></div>
+              <div class="field"><label>Category</label><input class="inp" id="b-cat" placeholder="e.g. Guides, News, Umrah"></div>
+              <div class="field"><label>Web address (slug)</label><input class="inp" id="b-slug" placeholder="auto from title"></div>
+              <div class="field"><label>Photo</label><input class="inp" id="b-image" placeholder="The photo link appears here after you upload or pick one">
+<div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn" id="b-uploadBtn">Upload photo</button><input type="file" id="b-file" accept="image/*" style="display:none"><span class="small-note" id="b-upmsg"></span></div></div>
+            </div>
+            <img id="b-imgprev" alt="" style="display:none;max-width:340px;width:100%;border-radius:12px;margin-top:12px;border:1px solid var(--line)">
+            <div class="field" style="margin-top:12px"><label>Short summary (shown on the blog index)</label><input class="inp" id="b-excerpt"></div>
+            <div class="field" style="margin-top:12px"><label>Article text</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                <button class="pill-btn" type="button" data-ins="h2">Heading</button>
+                <button class="pill-btn" type="button" data-ins="h3">Sub-heading</button>
+                <button class="pill-btn" type="button" data-ins="para">New paragraph</button>
+                <span class="small-note" id="b-words" style="margin-left:auto"></span>
+              </div>
+              <textarea class="inp" id="b-body" rows="14" placeholder="Write the article here. Use the Heading buttons for section titles, and leave a blank line between paragraphs."></textarea>
+            </div>
+            <label class="checkrow"><input type="checkbox" id="b-published" checked> Published (visible on the website)</label>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+              <button class="btn" id="blogSave">Save</button>
+              <button class="pill-btn" id="blogClear" type="button">Start a new post</button>
+              <button class="pill-btn" id="blogReset" type="button" style="display:none">Reset guide to original</button>
+              <a class="pill-btn" id="b-view" href="#" target="_blank" style="display:none;text-decoration:none">View on website</a>
+              <span class="small-note" id="blogSaved"></span>
+            </div>
+            <p class="small-note" style="margin-top:10px">Team posts appear at the top of the Guides page straight away and open at /blog-post. Built-in guides are edited in this same editor; the first save converts a guide to the simple format (headings + paragraphs), and Reset restores the original completely.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- REVIEWS -->
+      <section id="pane-reviews" style="display:none">
+        <div class="panelbox">
+          <h3>Add a client review</h3>
+          <p class="small-note" style="margin-bottom:12px">Only add reviews the business has genuinely received (Google, WhatsApp, email). The reviews section on the homepage stays hidden until at least one review is visible here - nothing is ever invented.</p>
+          <div class="grid2">
+            <div class="field"><label class="f" for="r-name">Client name</label><input id="r-name"></div>
+            <div class="field"><label class="f" for="r-country">Country</label><input id="r-country"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label class="f" for="r-visa">Visa</label><input id="r-visa" placeholder="e.g. Tourist eVisa"></div>
+            <div class="field"><label class="f" for="r-rating">Rating</label><select id="r-rating"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
+          </div>
+          <div class="field"><label class="f" for="r-text">Review text</label><textarea class="ta" id="r-text" rows="3"></textarea></div>
+          <button class="btn" id="revSave">Add review</button> <span class="okmsg" id="revSaved"></span>
+        </div>
+        <div class="panelbox"><h3>Reviews on the site</h3><div id="revList"></div></div>
+      </section>
+
+      <!-- PRICES -->
+      <section id="pane-prices" style="display:none">
+        <div class="panelbox">
+          <h3>Visa prices</h3>
+          <p class="small-note" style="margin-bottom:14px">Set a total price for a visa and it appears on that visa's page, its cards across the site, and in the assistant chatbot - in the currency you choose. Leave the amount empty for "confirmed in writing" (the current behaviour). Only publish prices the business has approved.</p>
+          <div id="priceRows"></div>
+          <button class="btn" id="priceSave" style="margin-top:14px">Save prices</button> <span class="okmsg" id="priceSaved"></span>
+        </div>
+      </section>
+
+      <!-- CONTENT -->
+      <section id="pane-content" style="display:none">
+        <div class="panelbox">
+          <h3>Content editor</h3>
+          <p class="small-note" style="margin-bottom:14px">Edit any text on the website, per language. Search for the current wording, change it, save - the site updates immediately, no rebuild needed. Editing English changes the original text; editing another language overrides its translation (machine translations you have not touched stay as they are).</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+            <select class="inp" id="c-lang" style="max-width:220px"></select>
+            <input class="inp" id="c-q" placeholder="Search site text..." style="max-width:340px">
+            <button class="pill-btn" id="c-search" type="button">Search</button>
+          </div>
+          <div id="contentList"></div>
+        </div>
+      </section>
+
+      <!-- MEDIA -->
+      <section id="pane-media" style="display:none">
+        <div class="panelbox">
+          <h3>Media library</h3>
+          <p class="small-note" style="margin-bottom:12px">Upload photos (JPG, PNG, WebP, max 6MB) and use their links in blog posts. Uploaded photos live on the server and survive redeploys.</p>
+          <input type="file" id="m-file" accept=".jpg,.jpeg,.png,.webp">
+          <button class="btn" id="m-upload" type="button">Upload photo</button> <span class="okmsg" id="m-saved"></span>
+          <div class="mgrid" id="mediaGrid" style="margin-top:18px"></div>
+        </div>
+        <div class="panelbox">
+          <h3>Photos already on the website</h3>
+          <p class="small-note" style="margin-bottom:12px">Every photo the website already uses - copy its link or use it in a blog post or guide. These are part of the site itself, so they cannot be deleted here.</p>
+          <div class="mgrid" id="mediaBuiltin"></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="pane-settings" style="display:none">
+        <div class="panelbox">
+          <h3>Contact details shown on the site</h3>
+          <div class="grid2">
+            <div class="field"><label class="f" for="s-whatsapp">WhatsApp number (digits, with country code)</label><input id="s-whatsapp"></div>
+            <div class="field"><label class="f" for="s-email">Public email</label><input id="s-email"></div>
+          </div>
+          <div class="field"><label class="f" for="s-notify">Team email for new-application alerts</label><input id="s-notify" placeholder="e.g. info@visit-saudi.ae"></div>
+        </div>
+        <div class="panelbox">
+          <h3>Email sending (SMTP)</h3>
+          <p class="small-note" style="margin-bottom:12px">When these are filled in, applicants are emailed automatically at every stage change and the team is alerted about new applications. For the brand mailbox, the login is the Google account behind info@visit-saudi.ae with an app password (smtp.gmail.com, port 587).</p>
+          <div class="grid2">
+            <div class="field"><label class="f" for="s-host">SMTP host</label><input id="s-host" placeholder="smtp.gmail.com"></div>
+            <div class="field"><label class="f" for="s-port">Port</label><input id="s-port" placeholder="587"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label class="f" for="s-user">SMTP username (login)</label><input id="s-user"></div>
+            <div class="field"><label class="f" for="s-from">Send emails as (From)</label><input id="s-from" placeholder="info@visit-saudi.ae"></div>
+          </div>
+          <div class="field"><label class="f" for="s-pass">SMTP password / app password</label><input id="s-pass" type="password" placeholder="Leave empty to keep the saved password"></div>
+          <button class="btn" id="setSave">Save settings</button> <span class="okmsg" id="setSaved"></span>
+          <div style="margin-top:20px;border-top:1px dashed var(--line);padding-top:16px">
+            <label class="f" for="s-test">Send a test email to</label>
+            <div style="display:flex;gap:9px;flex-wrap:wrap"><input id="s-test" type="email" placeholder="you@example.com" style="max-width:300px"><button class="pill-btn" id="testBtn" type="button">Send test</button> <span id="testRes" style="align-self:center;font-weight:700"></span></div>
+          </div>
+        </div>
+        <div class="panelbox">
+          <h3>Payments</h3>
+          <p class="small-note" style="margin-bottom:12px">Online payment keys for the website checkout. Keys are stored on the server only - they are never shown on the website and never included in backups.</p>
+          <div class="field"><label class="f" for="pay-enabled"><input type="checkbox" id="pay-enabled" style="width:auto;margin-right:8px;vertical-align:-1px">Accept online payments</label></div>
+          <div class="grid2">
+            <div class="field"><label class="f" for="pay-provider">Provider</label><select id="pay-provider"><option value="">Choose a provider</option><option>Ziina</option><option>Stripe</option><option>PayTabs</option><option>Telr</option><option>Checkout.com</option><option>PayPal</option><option>Other</option></select></div>
+            <div class="field"><label class="f" for="pay-mode">Mode</label><select id="pay-mode"><option value="test">Test</option><option value="live">Live</option></select></div>
+          </div>
+          <p class="small-note" style="margin:0 0 12px">Ziina: the API key is set in the hosting panel (xCloud &rarr; Environment &rarr; ZIINA_API_KEY), not here. The same Ziina account is shared with dubaivisaportal.ae, so the webhook there must not be changed.</p>
+          <div class="field"><label class="f" for="pay-pub">Public key (publishable key)</label><input id="pay-pub" autocomplete="off"></div>
+          <div class="field"><label class="f" for="pay-secret">Secret key</label><input id="pay-secret" type="password" autocomplete="off" placeholder="Leave empty to keep the saved key"></div>
+          <div class="field"><label class="f" for="pay-webhook">Webhook secret</label><input id="pay-webhook" type="password" autocomplete="off" placeholder="Leave empty to keep the saved secret"></div>
+          <button class="btn" id="paySave" type="button">Save payment settings</button> <span class="okmsg" id="paySaved"></span>
+        </div>
+      </section>
+
+      <!-- BACKUP -->
+      <section id="pane-backup" style="display:none">
+        <div class="panelbox">
+          <h3>Backup &amp; restore</h3>
+          <p class="small-note" style="margin-bottom:12px">Download one file containing every application, enquiry, blog post, review, price, content edit and setting (the email password is never included). Keep it somewhere safe - restoring it replaces the current data.</p>
+          <a class="btn" href="/api/admin/backup" style="text-decoration:none">Download backup</a>
+          <div style="margin-top:20px;border-top:1px dashed var(--line);padding-top:16px">
+            <label class="f" for="bk-file">Restore from a backup file</label>
+            <div style="display:flex;gap:9px;flex-wrap:wrap"><input type="file" id="bk-file" accept=".json"><button class="pill-btn" id="bkRestore" type="button">Restore</button> <span id="bkRes" style="align-self:center;font-weight:700"></span></div>
+          </div>
+        </div>
+        <div class="panelbox">
+          <h3>Team access</h3>
+          <p class="small-note">You are signed in as <b id="teamRole">-</b>. A second, limited <b>staff</b> login can be switched on by the developer in the server settings (STAFF_USER / STAFF_PASS). Staff can manage applications, the board, enquiries and customers - they cannot open Blog, Reviews, Prices, Content, Media, Settings or Backup.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</div>
+<script src="assets/js/admin.js?v=adm8"></script>
+</body></html>

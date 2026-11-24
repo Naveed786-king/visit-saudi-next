@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://visit-saudi.ae/sitemap.xml

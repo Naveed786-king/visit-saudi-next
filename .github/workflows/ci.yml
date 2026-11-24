@@ -1,0 +1,106 @@
+name: Build & test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: file:./ci.db
+      JWT_SECRET: ci-secret-ci-secret-ci-secret-ci-secret-1234
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD: CiPassword123
+      UPLOAD_DIR: uploads
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Type check (information)
+        run: npx prisma generate >/dev/null 2>&1; npx tsc --noEmit -p . 2>&1 | tee tsc.log | tail -60 || true
+      - name: Build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log || {
+            msg=$(grep -v '^\s*$' build.log | tail -n 60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Build failed::$msg"
+            exit 1
+          }
+      - name: Start new app and the old server
+        run: |
+          npm start > server.log 2>&1 &
+          mkdir -p /tmp/old-data
+          # the old server expects public/ and i18n/ next to it
+          mkdir -p /tmp/old && cp site/legacy-server.js /tmp/old/server.js && cp -r site/public /tmp/old/public && cp -r site/i18n /tmp/old/i18n
+          (cd /tmp/old && PORT=8324 DATA_DIR=/tmp/old-data node server.js > /tmp/old.log 2>&1 &)
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/api/auth/me >/dev/null && break; sleep 2; done
+          for i in $(seq 1 20); do curl -sf http://localhost:8324/ >/dev/null && break; sleep 1; done
+      - name: Every page identical to the old website (306 pages x 19 languages)
+        run: node scripts/ci/compare-pages.mjs http://localhost:3000 http://localhost:8324
+      - name: Smoke test
+        run: |
+          set -e
+          trap 'echo "::error title=Smoke test failed::see step output (last command: $BASH_COMMAND)"' ERR
+          check() { code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000$1"); echo "$1 -> $code"; [ "$code" = "$2" ]; }
+          check / 200
+          check /apply 200
+          check /track 200
+          check /ar/visa-types 200
+          check /admin/login 200
+          check /manage-jg0ojxafgt 302
+          check /login 307
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: app.visit-saudi.ae" http://localhost:3000/login); echo "dashboard /login -> $code"; [ "$code" = "200" ]
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: app.visit-saudi.ae" http://localhost:3000/apply); echo "dashboard /apply -> $code"; [ "$code" = "200" ]
+          curl -s -o /dev/null -w "%{redirect_url}\n" http://localhost:3000/login | grep -q "app.visit-saudi.ae/login"
+          # the website's own APIs
+          curl -sf http://localhost:3000/api/config | grep -q '"whatsapp"'
+          curl -sf http://localhost:3000/api/reviews | grep -q '"reviews"'
+          curl -sf http://localhost:3000/api/blog | grep -q '"posts"'
+          curl -sf -X POST http://localhost:3000/api/event -H 'Content-Type: application/json' -d '{"t":"checker","nat":"India"}' | grep -q '"ok":true'
+          curl -sf -X POST http://localhost:3000/api/contact -H 'Content-Type: application/json' -d '{"name":"CI Test","email":"ci@example.com","msg":"Hello"}' | grep -q '"ok":true'
+          PNG=$(printf '\x89PNG\r\n\x1a\nabcdefgh' | base64 -w0)
+          ref=$(curl -sf -X POST http://localhost:3000/api/apply -H 'Content-Type: application/json' -d "{\"visa\":\"tourist\",\"name\":\"CI Applicant\",\"nat\":\"India\",\"pass\":\"z1234567\",\"email\":\"ci.applicant@example.com\",\"phone\":\"+971500000000\",\"entry\":\"2026-12-20\",\"docs\":[{\"kind\":\"photo\",\"name\":\"photo.png\",\"data\":\"data:image/png;base64,$PNG\"}]}" | sed -E 's/.*"ref":"([^"]+)".*/\1/')
+          echo "applied: $ref"; echo "$ref" | grep -Eq '^VSA-[0-9A-F]{6}$'
+          curl -sf -X POST http://localhost:3000/api/track -H 'Content-Type: application/json' -d "{\"ref\":\"$ref\",\"pass\":\"Z1234567\"}" | tee track.json | grep -q '"stages":\["Application received"'
+          grep -q '"name":"CI Applicant"' track.json
+          curl -sf -X POST http://localhost:3000/api/message -H 'Content-Type: application/json' -d "{\"ref\":\"$ref\",\"pass\":\"Z1234567\",\"text\":\"Question from CI\"}" | grep -q 'Question from CI'
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:3000/api/track -H 'Content-Type: application/json' -d "{\"ref\":\"$ref\",\"pass\":\"WRONG\"}"); [ "$code" = "404" ]
+          curl -sf -X POST http://localhost:3000/api/track -H 'Content-Type: application/json' -d '{"ref":"VSA-DEMO26","pass":"X1234567"}' | grep -q '"demo":true'
+          curl -sf -X POST http://localhost:3000/api/pay -H 'Content-Type: application/json' -d "{\"ref\":\"$ref\"}" -o pay.json -w "%{http_code}\n" || true; cat pay.json; grep -q '"ok":false' pay.json
+          # admin
+          curl -sf -c cookies.txt -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@example.com","password":"CiPassword123","admin":true}' >/dev/null
+          curl -sf -b cookies.txt "http://localhost:3000/admin/applications" | grep -q "$ref"
+          curl -sf -b cookies.txt http://localhost:3000/api/admin/leads | grep -q "CI Test"
+          for pth in /admin /admin/applications /admin/applications/new /admin/steps /admin/payments /admin/whatsapp /admin/documents /admin/site-pages /admin/site-texts /admin/guides /admin/news /admin/reviews /admin/prices /admin/site-stats /admin/media /admin/settings; do code=$(curl -s -o /dev/null -w "%{http_code}" -b cookies.txt http://localhost:3000$pth); echo "$pth -> $code"; [ "$code" = "200" ]; done
+          for a in site styling pages blog reviews stats guides; do curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs/$a" >/dev/null || { echo "::error title=Check failed::admin vs $a"; exit 1; }; done
+          curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs/texts?lang=ar&q=visa" | grep -q '"strings"'
+          # styling: nothing on the pages until set; then a change shows up, and is removed again
+          curl -s http://localhost:3000/ | grep -q 'vs-styling' && { echo "::error::styling present without settings"; exit 1; } || true
+          curl -sf -b cookies.txt -X POST http://localhost:3000/api/admin/vs/styling -H 'Content-Type: application/json' -d '{"vars":{"--green":"#123456"},"css":"","pages":{"/about":".x{color:red}"}}' >/dev/null
+          sleep 6
+          curl -s http://localhost:3000/ | grep -q -- '--green:#123456'
+          curl -s http://localhost:3000/about | grep -q '.x{color:red}'
+          curl -s http://localhost:3000/ar/about | grep -q '.x{color:red}'
+          curl -sf -b cookies.txt -X POST http://localhost:3000/api/admin/vs/styling -H 'Content-Type: application/json' -d '{"vars":{},"css":"","pages":{}}' >/dev/null
+          # a website text change in Arabic, then back
+          curl -sf -b cookies.txt -X POST http://localhost:3000/api/admin/vs/texts -H 'Content-Type: application/json' -d '{"lang":"en","src":"Track your application at every stage","value":"CI TEXT CHANGE"}' >/dev/null
+          sleep 6
+          curl -s http://localhost:3000/ | grep -q 'CI TEXT CHANGE'
+          curl -sf -b cookies.txt -X POST http://localhost:3000/api/admin/vs/texts -H 'Content-Type: application/json' -d '{"lang":"en","src":"Track your application at every stage","value":""}' >/dev/null
+          app_id=$(curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs/find?ref=$ref" | sed -E 's/.*"id":"([a-z0-9]+)".*/\1/')
+          echo "app id: $app_id"
+          [ -n "$app_id" ] && curl -sf -b cookies.txt "http://localhost:3000/api/admin/vs-file/$app_id" | grep -q '"website":true'
+          check /does-not-exist 404
+      - name: Pages still identical after the admin tests
+        run: sleep 6 && node scripts/ci/compare-pages.mjs http://localhost:3000 http://localhost:8324
+      - name: Server log
+        if: always()
+        run: tail -n 80 server.log || true

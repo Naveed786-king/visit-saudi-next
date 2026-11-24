@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 296 72">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0e7a47"/>
+      <stop offset="1" stop-color="#063f24"/>
+    </linearGradient>
+    <clipPath id="arch"><path d="M32 4 C45 4 54 14 54 28 V56 H10 V28 C10 14 19 4 32 4 Z"/></clipPath>
+  </defs>
+  <g transform="translate(4,4)">
+  <path d="M32 4 C45 4 54 14 54 28 V56 H10 V28 C10 14 19 4 32 4 Z" fill="url(#g1)"/>
+  <g clip-path="url(#arch)">
+    <path d="M32 10.5 C42 10.5 48.5 18.2 48.5 28.5 V56 H15.5 V28.5 C15.5 18.2 22 10.5 32 10.5 Z" fill="none" stroke="#dcb95f" stroke-width="1.3" opacity="0.8"/>
+    <g fill="none" stroke="#f5edd6" stroke-width="2.3" stroke-linecap="round">
+      <path d="M32 29.5 C26.5 23.8 20.3 21.8 14.6 23.6"/>
+      <path d="M32 29.5 C29.4 23.2 25 19.4 19 18.4"/>
+      <path d="M32 29.5 C32.3 23.4 31.6 18.4 29 14.6"/>
+      <path d="M32 29.5 C34.6 23.2 39 19.4 45 18.4"/>
+      <path d="M32 29.5 C37.5 23.8 43.7 21.8 49.4 23.6"/>
+    </g>
+    <path d="M32.5 54.5 C31.7 46.8 31.5 38.2 32.3 30" fill="none" stroke="#dcb95f" stroke-width="3.1" stroke-linecap="round"/>
+    <g fill="#dcb95f">
+      <circle cx="26.3" cy="36" r="1.9"/>
+      <circle cx="37.7" cy="36" r="1.9"/>
+    </g>
+  </g>
+</g>
+  <text x="70" y="38" font-family="Marcellus, Georgia, 'Times New Roman', serif" font-size="33" fill="#063f24" letter-spacing="0.5">Visit Saudi</text>
+  <text x="72" y="59" font-family="Verdana, Geneva, sans-serif" font-size="11" font-weight="bold" fill="#c19a3d" letter-spacing="4.6">VISIT-SAUDI.AE</text>
+</svg>

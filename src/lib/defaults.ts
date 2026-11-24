@@ -1,0 +1,296 @@
+// Default settings. Everything here is editable from Admin → Settings / Header / Footer.
+
+export type NavLink = { label: string; href: string; description?: string; icon?: string; children?: NavLink[] };
+
+export type SiteSettings = {
+  name: string;
+  tagline: string;
+  logo: string;
+  logoLight: string;
+  favicon: string;
+  phone: string;
+  phoneDisplay: string;
+  whatsapp: string;
+  whatsappMessage: string;
+  emailGeneral: string;
+  emailVisa: string;
+  address: string;
+  poBox: string;
+  mapUrl: string;
+  mapEmbed: string;
+  hours: string;
+  hoursClosed: string;
+  social: { facebook: string; instagram: string; youtube: string; twitter: string; linkedin: string; tiktok: string };
+  colors: { gold: string; goldLight: string; ink: string; sand: string };
+  showWhatsappButton: boolean;
+  showMobileBar: boolean;
+  showPreloader: boolean;
+  headScripts: string;
+  bodyScripts: string;
+  seo: { titleTemplate: string; defaultTitle: string; description: string; keywords: string; ogImage: string; googleVerification?: string; bingVerification?: string };
+};
+
+export type MegaMenu = {
+  enabled: boolean;
+  attachTo: string; // the menu item (by its link) that opens the big panel, e.g. /services
+  eyebrow: string;
+  title: string;
+  text: string;
+  bullets: string; // one per line
+  groups: { title: string; links: NavLink[] }[];
+  calculatorLabel: string;
+  calculatorHref: string;
+  allLabel: string;
+  allHref: string;
+};
+
+export type HeaderSettings = {
+  topbar: { enabled: boolean; text: string; linkLabel: string; linkHref: string };
+  menu: NavLink[];
+  cta: { label: string; href: string };
+  showLogin: boolean;
+  mega: MegaMenu;
+};
+
+export type FooterSettings = {
+  about: string;
+  columns: { title: string; links: NavLink[] }[];
+  ctaTitle: string;
+  ctaHighlight: string;
+  ctaButton: { label: string; href: string };
+  newsletter: { enabled: boolean; title: string; text: string };
+  copyright: string;
+  disclaimer: string;
+  bottomLinks: NavLink[];
+};
+
+export type SmtpSettings = {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+  notifyEmail: string; // one or more addresses (comma or new line separated)
+  notifyOn: { leads: boolean; applications: boolean; messages: boolean; accounts: boolean; subscribers: boolean };
+};
+
+export const defaultSite: SiteSettings = {
+  name: 'Visit Saudi',
+  tagline: 'Saudi visit visas from Dubai - Brightlink Management Consultancy',
+  logo: '',
+  logoLight: '',
+  favicon: '',
+  phone: '+971566556645',
+  phoneDisplay: '+971 56 655 6645',
+  whatsapp: '971566556645',
+  whatsappMessage: "Hello! I'd like help with a Saudi visa.",
+  emailGeneral: 'info@visit-saudi.ae',
+  emailVisa: 'visa@brightlinkconsulting.ae',
+  address: 'Office M08-27, M1 Floor, Crystal Tower, Millennium Central Same Building, Al Asayel Street, Business Bay, Dubai, U.A.E',
+  poBox: 'P.O Box: 554552',
+  mapUrl: 'https://maps.app.goo.gl/kA8Ht6pMCgTTEoARA',
+  mapEmbed: 'https://www.google.com/maps?q=Crystal+Tower+Business+Bay+Dubai&output=embed',
+  hours: 'Monday – Saturday: 9:00 am – 6:00 pm',
+  hoursClosed: 'Sunday: Closed',
+  social: {
+    facebook: 'https://facebook.com/',
+    instagram: 'https://instagram.com/brightlink.consulting',
+    youtube: 'https://youtube.com/',
+    twitter: 'https://x.com/',
+    linkedin: '',
+    tiktok: '',
+  },
+  colors: { gold: '#C19A3D', goldLight: '#DCB95F', ink: '#032115', sand: '#F7F2E7' },
+  showWhatsappButton: true,
+  showMobileBar: true,
+  showPreloader: true,
+  headScripts: '',
+  bodyScripts: '',
+  seo: {
+    titleTemplate: '%s | Visit Saudi',
+    defaultTitle: 'Saudi Visit Visas | Visit Saudi - visit-saudi.ae',
+    description:
+      'Apply for the RAK Golden Visa through property investment in Ras Al Khaimah. Eligibility, requirements, fees, processing time, benefits and family sponsorship — expert assistance from Brightlink Management Consultancy.',
+    keywords: 'RAK Golden Visa, Ras Al Khaimah Golden Visa, UAE Golden Visa, property investor visa, retirement visa UAE',
+    ogImage: '',
+    googleVerification: '',
+    bingVerification: '',
+  },
+};
+
+export const defaultHeader: HeaderSettings = {
+  topbar: {
+    enabled: true,
+    text: 'VIP Fast-Track: RAK Golden Visa in as little as 48 working hours',
+    linkLabel: 'Check eligibility',
+    linkHref: '/contact-us',
+  },
+  menu: [
+    { label: 'Home', href: '/' },
+    { label: 'About Us', href: '/about-us' },
+    {
+      label: 'Services',
+      href: '/services',
+      children: [
+        { label: 'RAK Investor Visa', href: '/ras-al-khaimah-property-golden-visa', description: '10-year Golden Visa via AED 2M+ property' },
+        { label: 'RAK Retirement Visa', href: '/ras-al-khaimah-retirement-visa', description: '5-year residency for residents aged 55+' },
+        { label: 'All Services', href: '/services', description: 'Emirates ID, medical, attestation & more' },
+      ],
+    },
+    { label: 'Blogs', href: '/latest-news-blogs' },
+    { label: 'Contact Us', href: '/contact-us' },
+  ],
+  cta: { label: 'Apply Now', href: '/apply' },
+  showLogin: true,
+  mega: {
+    enabled: true,
+    attachTo: '/services',
+    eyebrow: 'Visa & document services',
+    title: 'One team, every document.',
+    text: 'From your first eligibility check to the Emirates ID in your hand — handled through official channels, with every government fee shown before you pay.',
+    bullets: 'Licensed by Dubai DET\nTransparent fixed fees\nAvailable in 10 languages',
+    groups: [
+      {
+        title: 'Visas & Residency',
+        links: [
+          { label: 'RAK Investor Visa', href: '/ras-al-khaimah-property-golden-visa', icon: 'building' },
+          { label: 'RAK Retirement Visa', href: '/ras-al-khaimah-retirement-visa', icon: 'sun' },
+          { label: 'Family Golden Visa', href: '/services/family-golden-visa', icon: 'users' },
+          { label: 'Visit Visas', href: '/services/visit-visas', icon: 'plane' },
+          { label: 'UAE Visa Cancellation', href: '/services/visa-cancellation', icon: 'ban' },
+        ],
+      },
+      {
+        title: 'ID, Medical & Insurance',
+        links: [
+          { label: 'Emirates ID Services', href: '/services/emirates-id', icon: 'card' },
+          { label: 'Medical Fitness Test', href: '/services/medical-fitness-test', icon: 'doctor' },
+          { label: 'Health Insurance', href: '/services/health-insurance', icon: 'health' },
+          { label: 'Update Personal Information', href: '/services/update-personal-information', icon: 'user-check' },
+        ],
+      },
+      {
+        title: 'Attestation',
+        links: [
+          { label: 'MOFA Attestation', href: '/services/mofa-attestation', icon: 'stamp' },
+          { label: 'Educational Certificate Attestation', href: '/services/educational-certificate-attestation', icon: 'student' },
+          { label: 'Marriage Certificate Attestation', href: '/services/marriage-certificate-attestation', icon: 'handshake' },
+          { label: 'Birth Certificate Attestation', href: '/services/birth-certificate-attestation', icon: 'baby' },
+        ],
+      },
+      {
+        title: 'Legal & Documents',
+        links: [
+          { label: 'Legal Translation', href: '/services/legal-translation', icon: 'globe' },
+          { label: 'Police Clearance Certificate', href: '/services/police-clearance-certificate', icon: 'shield' },
+          { label: 'Golden Visa Cost Calculator', href: '/#calculator', icon: 'calculator' },
+          { label: 'All Services', href: '/services', icon: 'layers' },
+        ],
+      },
+    ],
+    calculatorLabel: 'Visa Calculator',
+    calculatorHref: '/#calculator',
+    allLabel: 'View all services',
+    allHref: '/services',
+  },
+};
+
+export const defaultFooter: FooterSettings = {
+  about:
+    'We help entrepreneurs, investors, and property owners secure long-term residency in RAK through structured, hassle-free processes. From Golden Visa applications to complete documentation support — we ensure your transition is smooth, compliant, and stress-free.',
+  columns: [
+    {
+      title: 'Services',
+      links: [
+        { label: 'RAK Investor Visa', href: '/ras-al-khaimah-property-golden-visa' },
+        { label: 'RAK Retirement Visa', href: '/ras-al-khaimah-retirement-visa' },
+        { label: 'All Services', href: '/services' },
+        { label: 'Apply Online', href: '/apply' },
+      ],
+    },
+    {
+      title: 'Navigation',
+      links: [
+        { label: 'About Us', href: '/about-us' },
+        { label: 'Blogs', href: '/latest-news-blogs' },
+        { label: 'Contact Us', href: '/contact-us' },
+        { label: 'Client Login', href: '/login' },
+      ],
+    },
+  ],
+  ctaTitle: 'Get Your',
+  ctaHighlight: 'Golden Visa Today!',
+  ctaButton: { label: 'Apply Now', href: '/apply' },
+  newsletter: { enabled: true, title: 'Golden Visa updates', text: 'Rule changes, fees and offers — straight to your inbox.' },
+  copyright: '© {year} Golden Visa Ras Al Khaimah - RAK. All Rights Reserved.',
+  disclaimer:
+    'RakGoldenVisa.com is operated by Brightlink Management Consultancy LLC, an independent private consultancy and third-party service provider. We are not a government authority or affiliated with any UAE government entity. We provide professional assistance with visa applications, document preparation, typing services, and application submissions through the relevant official government channels. Final approval, processing times, and visa decisions remain solely at the discretion of the competent UAE authorities.',
+  bottomLinks: [
+    { label: 'Privacy Policy', href: '/privacy-policy' },
+    { label: 'Terms & Conditions', href: '/terms-and-conditions' },
+  ],
+};
+
+export const defaultSmtp: SmtpSettings = {
+  host: '',
+  port: 587,
+  secure: false,
+  user: '',
+  pass: '',
+  from: '',
+  notifyEmail: '',
+  notifyOn: { leads: true, applications: true, messages: true, accounts: true, subscribers: true },
+};
+
+export const SERVICE_OPTIONS = [
+  '1 Year Multiple Entry Visa',
+  '90 Days Multiple Entry Visa',
+  'Tourist eVisa',
+  'Family & Friends Visit Visa',
+  'Umrah Visa',
+  'Business Visit Visa',
+  'Medical Treatment Visa',
+  'Personal Visit Visa',
+  'Stopover Transit Visa',
+  'Employment Visa Guidance',
+  'Hajj Visa Guidance',
+  'Other',
+];
+
+export const APPLICATION_STATUSES: { value: string; label: string; progress: number; color: string }[] = [
+  { value: 'submitted', label: 'Submitted', progress: 10, color: 'slate' },
+  { value: 'under_review', label: 'Under Review', progress: 25, color: 'blue' },
+  { value: 'documents_required', label: 'Documents Required', progress: 30, color: 'amber' },
+  { value: 'processing', label: 'Processing', progress: 50, color: 'indigo' },
+  { value: 'initial_approval', label: 'Initial Approval', progress: 65, color: 'violet' },
+  { value: 'medical_biometrics', label: 'Medical & Biometrics', progress: 80, color: 'cyan' },
+  { value: 'approved', label: 'Visa Approved', progress: 95, color: 'emerald' },
+  { value: 'completed', label: 'Completed', progress: 100, color: 'green' },
+  { value: 'rejected', label: 'Rejected', progress: 100, color: 'red' },
+  { value: 'cancelled', label: 'Cancelled', progress: 0, color: 'zinc' },
+];
+
+export const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'closed'];
+
+export type TranslationSettings = {
+  provider: 'gemini' | 'google' | 'claude' | 'deepl' | 'off';
+  apiKey: string; // Claude or DeepL key
+  model: string; // Claude model
+  geminiKey: string; // Google Gemini key (aistudio.google.com/apikey)
+  geminiModel: string;
+  autoTranslate: boolean;
+  enabled: string[]; // language codes shown on the website
+  showSwitcher: boolean;
+};
+
+export const defaultTranslation: TranslationSettings = {
+  provider: 'gemini',
+  apiKey: '',
+  model: 'claude-sonnet-5-5',
+  geminiKey: process.env.GEMINI_API_KEY || '',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  autoTranslate: true,
+  enabled: ['en', 'ar', 'ru', 'tr', 'zh', 'fr', 'de', 'it', 'es', 'ro', 'pt', 'at', 'pl', 'hu', 'hr', 'sk', 'cs', 'hi', 'id', 'ur'],
+  showSwitcher: true,
+};
