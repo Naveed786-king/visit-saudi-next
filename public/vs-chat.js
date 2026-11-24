@@ -38,7 +38,7 @@
 
   /* ---------- styles (scoped to the chat panel) ---------- */
   var css =
-    '#chatPanel .vsc-face{position:relative;display:inline-block;flex:none;border-radius:50%}' +
+    '.vsc-face{position:relative;display:inline-block;flex:none;border-radius:50%;line-height:0}' +
     '#chatPanel .vsc-face img,#chatBtn .vsc-face img{width:100%;height:100%;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px #fff;display:block}' +
     '.vsc-face .vsc-dot{position:absolute;right:-1px;bottom:-1px;width:28%;height:28%;min-width:9px;min-height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px #fff}' +
     '[dir=rtl] .vsc-face .vsc-dot{right:auto;left:-1px}' +

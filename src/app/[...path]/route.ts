@@ -20,7 +20,7 @@ async function withChat(html: string, pathname: string) {
   if (!chatCache.on || !chatCache.cfg || !html.includes('id="chatPanel"')) return html;
   const lang = (pathname.match(/^\/(ar|ru|de|es|fr|tr|zh|ur|hi|it|ro|pt|pl|hu|hr|sk|cs|id)(\/|$)/) || [])[1] || 'en';
   const conf = JSON.stringify(widgetConfig(chatCache.cfg, lang)).replace(/</g, '\\u003c');
-  const tag = `<script>window.VS_CHAT=${conf}</script><script src="/vs-chat.js?v=2" defer></script>`;
+  const tag = `<script>window.VS_CHAT=${conf}</script><script src="/vs-chat.js?v=3" defer></script>`;
   const i = html.lastIndexOf('</body>');
   return i < 0 ? html + tag : html.slice(0, i) + tag + html.slice(i);
 }
