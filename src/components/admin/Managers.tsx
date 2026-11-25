@@ -196,7 +196,31 @@ export function CustomersManager() {
           { key: 'name', label: 'Name', render: (r) => <div><p className="font-semibold">{r.name}</p><p className="text-xs text-gray-400">{r.email}</p></div> },
           { key: 'phone', label: 'Phone', className: 'hidden md:table-cell' },
           { key: 'role', label: 'Role', render: (r) => <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold">{r.role}</span> },
-          { key: 'apps', label: 'Applications', className: 'hidden md:table-cell', render: (r) => r._count?.applications ?? 0 },
+          {
+            key: 'apps',
+            label: 'Application',
+            className: 'hidden md:table-cell',
+            render: (r) => {
+              const a = r.applications?.[0];
+              if (!a) return <span className="text-xs text-gray-400">No application yet</span>;
+              const pct = Math.max(0, Math.min(100, Number(a.progress) || 0));
+              return (
+                <a href={`/admin/applications/${a.id}`} className="block min-w-[170px] hover:opacity-80">
+                  <p className="font-mono text-xs font-bold text-gray-800">
+                    {a.refNo}
+                    {(r._count?.applications ?? 0) > 1 && <span className="ml-1 font-sans font-normal text-gray-400">+{r._count.applications - 1} more</span>}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">{a.service}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+                      <span className="block h-full rounded-full bg-emerald-700" style={{ width: `${pct}%` }} />
+                    </span>
+                    <span className="text-[0.65rem] font-bold capitalize text-gray-500">{String(a.status || '').replace(/_/g, ' ')}</span>
+                  </div>
+                </a>
+              );
+            },
+          },
           { key: 'createdAt', label: 'Joined', className: 'hidden lg:table-cell', render: (r) => formatDate(r.createdAt) },
           { key: 'active', label: 'Status', render: (r) => yes(r.active) },
         ],

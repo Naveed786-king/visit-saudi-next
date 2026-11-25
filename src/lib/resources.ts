@@ -98,7 +98,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     required: ['name', 'email'],
     adminOnly: true,
     filters: ['role'],
-    select: { id: true, name: true, email: true, phone: true, nationality: true, role: true, active: true, lastLoginAt: true, createdAt: true, _count: { select: { applications: true } } },
+    select: { id: true, name: true, email: true, phone: true, nationality: true, role: true, active: true, lastLoginAt: true, createdAt: true, _count: { select: { applications: true } }, applications: { select: { id: true, refNo: true, service: true, status: true, progress: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 1 } },
   },
   media: {
     model: 'media',

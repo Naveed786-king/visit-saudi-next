@@ -25,6 +25,15 @@ async function withChat(html: string, pathname: string) {
   return i < 0 ? html + tag : html.slice(0, i) + tag + html.slice(i);
 }
 
+/** The apply page (every language): steps on top, a password for the client dashboard, "Open your dashboard" at the end */
+const APPLY_RE = /^\/((ar|ru|de|es|fr|tr|zh|ur|hi|it|ro|pt|pl|hu|hr|sk|cs|id)\/)?apply\/?$/;
+const APPLY_TAG = '<script src="/vs-apply.js?v=1" defer></script>';
+function withApplySteps(html: string, pathname: string) {
+  if (!APPLY_RE.test(pathname) || !html.includes('id="wizard"')) return html;
+  const i = html.lastIndexOf('</body>');
+  return i < 0 ? html + APPLY_TAG : html.slice(0, i) + APPLY_TAG + html.slice(i);
+}
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -74,7 +83,7 @@ async function handle(req: Request) {
       return new Response(new Uint8Array(body), { status: 200, headers: { 'Content-Type': r.mime, 'Cache-Control': r.cache } });
     }
     if (r.status === 200 && req.method === 'GET') logView(pathname).catch(() => {});
-    if (r.status === 200 && !r.mime) r.body = await withChat(r.body, pathname);
+    if (r.status === 200 && !r.mime) r.body = await withChat(withApplySteps(r.body, pathname), pathname);
     return new Response(r.body, { status: r.status, headers: { 'Content-Type': r.mime || 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
   } catch (e) {
     console.error('[page]', pathname, (e as Error).message);

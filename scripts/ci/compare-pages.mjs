@@ -19,6 +19,8 @@ async function worker() {
     const k = i++;
     const u = k < all.length ? all[k] : extra[k - all.length];
     const [a, b] = await Promise.all([get(NEW, u), get(OLD, u)]);
+    // the apply page's step tabs and dashboard password (vs-apply.js) are the one intended addition
+    if (/^\/([a-z]{2}\/)?apply$/.test(u)) a.body = Buffer.from(a.body.toString('utf8').replace('<script src="/vs-apply.js?v=1" defer></script>', ''), 'utf8');
     if (a.status === b.status && a.loc === b.loc && a.body.equals(b.body)) same++;
     else bad.push(`${u}: new ${a.status} ${a.loc} ${a.body.length}B / old ${b.status} ${b.loc} ${b.body.length}B`);
   }

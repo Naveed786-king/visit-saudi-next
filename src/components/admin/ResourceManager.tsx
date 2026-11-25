@@ -6,7 +6,7 @@ import { FieldGroup } from './FieldInput';
 import { Btn, Card, Modal, PageTitle, api, toast, Empty } from './ui';
 import { cn } from '@/lib/utils';
 
-export type Column = { key: string; label: string; render?: (row: any) => React.ReactNode; className?: string };
+export type Column = { key: string; label: string; render?: (row: any, reload: () => void) => React.ReactNode; className?: string };
 
 export type ResourceConfig = {
   resource: string;
@@ -167,7 +167,7 @@ export default function ResourceManager({ config }: { config: ResourceConfig }) 
                 <tr key={r.id} className={cn('border-b border-gray-50 transition hover:bg-gray-50/80', config.onRowClick && 'cursor-pointer')} onClick={() => config.onRowClick?.(r)}>
                   {config.columns.map((c) => (
                     <td key={c.key} className={cn('px-4 py-3 align-middle', c.className)}>
-                      {c.render ? c.render(r) : String(r[c.key] ?? '—')}
+                      {c.render ? c.render(r, load) : String(r[c.key] ?? '—')}
                     </td>
                   ))}
                   <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>

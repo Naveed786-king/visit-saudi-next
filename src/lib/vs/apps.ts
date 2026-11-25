@@ -3,10 +3,10 @@
 import crypto from 'crypto';
 import type { Application, Document, Message, Payment } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, checkPassword, getSession, startSession, isStaff } from '@/lib/auth';
 import { writeStored } from '@/lib/upload';
 import { notifyAdmin, rowsTable } from '@/lib/mail';
-import { ensureToken, setStage, stepsFor, stageDatesOf, currentStageId } from '@/lib/portal/files';
+import { ensureToken, setStage, stepsFor, stageDatesOf, currentStageId, fileLink } from '@/lib/portal/files';
 import { notifyClient, notifyTeam } from '@/lib/portal/notify';
 
 export const VISA_LABELS: Record<string, string> = {
@@ -91,15 +91,23 @@ export async function storeDataUrl(appId: string, dataUrl: string, name: string,
   return { name: safe, path: rel, size: buf.length, mime: MIME_OF[ext] || 'application/octet-stream' };
 }
 
-/** The client account behind an application: one per email (they set a password from the dashboard's "Forgot password") */
-async function customerFor(name: string, email: string, phone: string, nat: string) {
+/** The client account behind an application: one per email.
+ * With a password (the apply page asks for one): a new client gets that password and is signed in; a returning
+ * client who types their own password is signed in; a different password still files the application to their
+ * account, without signing in (nobody can take over an account by applying with its email).
+ * Without a password (older pages): a closed account the client opens later with "Forgot password". */
+async function customerFor(name: string, email: string, phone: string, nat: string, password: string) {
   const em = email.toLowerCase();
   const u = await prisma.user.findUnique({ where: { email: em } });
-  if (u) return u.id;
+  if (u) {
+    if (isStaff(u.role)) return { error: 'staff_email' as const };
+    const signIn = !!password && u.active && (await checkPassword(password, u.passwordHash));
+    return { user: u, signIn, account: signIn ? ('signed-in' as const) : ('existing' as const) };
+  }
   const created = await prisma.user.create({
-    data: { name, email: em, phone, nationality: nat || null, passwordHash: await hashPassword(crypto.randomBytes(24).toString('hex')), role: 'CUSTOMER' },
+    data: { name, email: em, phone, nationality: nat || null, passwordHash: await hashPassword(password || crypto.randomBytes(24).toString('hex')), role: 'CUSTOMER' },
   });
-  return created.id;
+  return { user: created, signIn: !!password, account: password ? ('new' as const) : ('closed' as const) };
 }
 
 export type ApplyBody = Record<string, any>;
@@ -107,14 +115,18 @@ export type ApplyBody = Record<string, any>;
 /** POST /api/apply from the website's apply page (JSON) */
 export async function websiteApply(b: ApplyBody): Promise<{ status: number; body: Record<string, unknown> }> {
   for (const f of ['visa', 'name', 'nat', 'pass', 'email', 'phone', 'entry']) if (!b[f] || String(b[f]).trim() === '') return { status: 400, body: { ok: false, error: 'Missing field: ' + f } };
-  if (!/^\S+@\S+\.\S+$/.test(b.email)) return { status: 400, body: { ok: false, error: 'Invalid email' } };
-  const ref = await newRef();
+  if (!/^\S+@\S+\.\S+$/.test(b.email)) return { status: 400, body: { ok: false, error: 'Invalid email', field: 'email' } };
+  const password = typeof b.password === 'string' ? b.password.slice(0, 200) : '';
+  if (password && password.length < 8) return { status: 400, body: { ok: false, error: 'Password must be at least 8 characters', field: 'password', code: 'pw_short' } };
   const name = String(b.name).slice(0, 90);
   const visa = String(b.visa).slice(0, 30);
   const email = String(b.email).slice(0, 120);
   const phone = String(b.phone).slice(0, 40);
   const nat = String(b.nat).slice(0, 60);
-  const userId = await customerFor(name, email, phone, nat);
+  const acc = await customerFor(name, email, phone, nat, password);
+  if ('error' in acc) return { status: 400, body: { ok: false, error: 'This email belongs to a team account. Please use the client’s own email.', field: 'email', code: acc.error } };
+  const userId = acc.user.id;
+  const ref = await newRef();
   const now = new Date().toISOString();
   const vs: VsMeta = {
     visa,
@@ -183,7 +195,16 @@ export async function websiteApply(b: ApplyBody): Promise<{ status: number; body
   );
   void notifyClient(app, 'welcome');
   void notifyTeam('teamApplication', { name, phone, email, service: app.service, ref }, app.id, { email: false });
-  return { status: 200, body: { ok: true, ref } };
+  // signed in to the client dashboard (a team member testing in their own browser stays signed in as staff)
+  if (acc.signIn) {
+    const cur = await getSession().catch(() => null);
+    if (!cur || !isStaff(cur.role)) await startSession(acc.user).catch(() => {});
+  }
+  let dashboard = '';
+  try {
+    dashboard = await fileLink(app);
+  } catch {}
+  return { status: 200, body: { ok: true, ref, dashboard, account: acc.account } };
 }
 
 type Full = Application & { documents: Document[]; messages: Message[]; payments: Payment[] };
