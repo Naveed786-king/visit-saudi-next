@@ -38,7 +38,7 @@ function withApplySteps(html: string, pathname: string) {
  * and the restyled language and currency buttons (vs-header.css / vs-header.js) */
 const ACCT_LABEL: Record<string, string> = { en: 'My account', ar: 'حسابي', ru: 'Мой аккаунт', de: 'Mein Konto', es: 'Mi cuenta', fr: 'Mon compte', tr: 'Hesabım', zh: '我的账户', ur: 'میرا اکاؤنٹ', hi: 'मेरा खाता', it: 'Il mio account', ro: 'Contul meu', pt: 'A minha conta', pl: 'Moje konto', hu: 'Fiókom', hr: 'Moj račun', sk: 'Môj účet', cs: 'Můj účet', id: 'Akun saya' };
 const ACCT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
-const HEADER_CSS = '<link rel="stylesheet" href="/vs-header.css?v=1">';
+const HEADER_CSS = '<link rel="stylesheet" href="/vs-header.css?v=2">';
 const HEADER_JS = '<script src="/vs-header.js?v=1" defer></script>';
 function withHeader(html: string, pathname: string) {
   const re = /<a class="nav-track mtrk" href="[^"]*">[\s\S]*?<\/a>/;

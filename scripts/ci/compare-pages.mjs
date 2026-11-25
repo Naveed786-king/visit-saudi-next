@@ -24,7 +24,7 @@ async function worker() {
     if (b.status === 200 && /^text\/html/.test(String(a.type || 'text/html'))) {
       let s = a.body.toString('utf8');
       if (s.includes('vs-header.js')) {
-        s = s.replace('<link rel="stylesheet" href="/vs-header.css?v=1">', '').replace('<script src="/vs-header.js?v=1" defer></script>', '');
+        s = s.replace('<link rel="stylesheet" href="/vs-header.css?v=2">', '').replace('<script src="/vs-header.js?v=1" defer></script>', '');
         const old = b.body.toString('utf8').match(/<a class="nav-track mtrk" href="[^"]*">[\s\S]*?<\/a>/);
         if (old) s = s.replace(/<a class="vs-acct" href="\/portal"[^>]*>[\s\S]*?<\/a>/, old[0]);
         a.body = Buffer.from(s, 'utf8');

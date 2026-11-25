@@ -21,3 +21,4 @@ html[dir="rtl"] .vs-acct.in::after{right:auto;left:1px}
   .vs-acct{width:38px;height:38px}
   .vs-acct svg{width:18px;height:18px}
 }
+.nav nav a.nav-track{display:none!important}
