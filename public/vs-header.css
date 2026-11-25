@@ -1,0 +1,23 @@
+/* Visit Saudi - header controls: language, currency and the client account icon */
+.hcontrols .dd-btn.hsel{justify-content:flex-start;width:auto;height:42px;padding:0 12px 0 5px;gap:8px;border:1px solid #e6dcbc;background:#fff;border-radius:999px;box-shadow:0 2px 10px rgba(4,33,21,.06);font-weight:800;font-size:.86rem;letter-spacing:.03em;color:var(--green);line-height:1;transition:border-color .2s,box-shadow .2s}
+.hcontrols .dd-btn.hsel:hover,.hcontrols .dd.open .dd-btn.hsel{border-color:var(--gold);box-shadow:0 6px 18px rgba(201,162,75,.22)}
+.hcontrols .dd-btn.hsel.vs-has-ico>svg:not(.chev){display:none}
+.hcontrols .dd-btn .chev{width:12px;height:12px;color:#a8966a}
+.vs-ico{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;background:#f8f2df;color:var(--gold-d,#8a6a1f);font-weight:800;font-size:.92rem;box-shadow:inset 0 0 0 1px rgba(201,162,75,.4)}
+.vs-ico img{width:100%;height:100%;object-fit:cover;display:block}
+.vs-acct{position:relative;width:42px;height:42px;border-radius:50%;display:inline-grid;place-items:center;flex:none;border:1px solid #e6dcbc;background:#fff;color:var(--green);box-shadow:0 2px 10px rgba(4,33,21,.06);transition:border-color .2s,box-shadow .2s,background .2s,color .2s;text-decoration:none!important}
+.vs-acct:hover{border-color:var(--gold);box-shadow:0 6px 18px rgba(201,162,75,.22)}
+.vs-acct svg{width:20px;height:20px}
+.vs-acct.in{background:var(--green);border-color:var(--green);color:#fff}
+.vs-acct.in::after{content:"";position:absolute;right:1px;bottom:1px;width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px #fff}
+html[dir="rtl"] .vs-acct.in::after{right:auto;left:1px}
+.vs-acct::before{content:none!important}
+@media(max-width:1100px){
+  .hcontrols .vs-acct{margin-inline-start:auto}
+}
+@media(max-width:560px){
+  .hcontrols .dd-btn.hsel{height:38px;padding:0 9px 0 4px;gap:6px;font-size:.8rem}
+  .vs-ico{width:28px;height:28px;font-size:.85rem}
+  .vs-acct{width:38px;height:38px}
+  .vs-acct svg{width:18px;height:18px}
+}

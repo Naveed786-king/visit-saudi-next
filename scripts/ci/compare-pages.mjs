@@ -20,6 +20,16 @@ async function worker() {
     const u = k < all.length ? all[k] : extra[k - all.length];
     const [a, b] = await Promise.all([get(NEW, u), get(OLD, u)]);
     // the apply page's step tabs and dashboard password (vs-apply.js) are the one intended addition
+    // and the header's account icon with the restyled language / currency buttons (vs-header.css / .js)
+    if (b.status === 200 && /^text\/html/.test(String(a.type || 'text/html'))) {
+      let s = a.body.toString('utf8');
+      if (s.includes('vs-header.js')) {
+        s = s.replace('<link rel="stylesheet" href="/vs-header.css?v=1">', '').replace('<script src="/vs-header.js?v=1" defer></script>', '');
+        const old = b.body.toString('utf8').match(/<a class="nav-track mtrk" href="[^"]*">[\s\S]*?<\/a>/);
+        if (old) s = s.replace(/<a class="vs-acct" href="\/portal"[^>]*>[\s\S]*?<\/a>/, old[0]);
+        a.body = Buffer.from(s, 'utf8');
+      }
+    }
     if (/^\/([a-z]{2}\/)?apply$/.test(u)) a.body = Buffer.from(a.body.toString('utf8').replace('<script src="/vs-apply.js?v=1" defer></script>', ''), 'utf8');
     if (a.status === b.status && a.loc === b.loc && a.body.equals(b.body)) same++;
     else bad.push(`${u}: new ${a.status} ${a.loc} ${a.body.length}B / old ${b.status} ${b.loc} ${b.body.length}B`);

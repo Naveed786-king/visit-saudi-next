@@ -34,6 +34,24 @@ function withApplySteps(html: string, pathname: string) {
   return i < 0 ? html + APPLY_TAG : html.slice(0, i) + APPLY_TAG + html.slice(i);
 }
 
+/** Header: the account icon in place of "Track Application" (signed in: the dashboard, otherwise sign-in),
+ * and the restyled language and currency buttons (vs-header.css / vs-header.js) */
+const ACCT_LABEL: Record<string, string> = { en: 'My account', ar: 'حسابي', ru: 'Мой аккаунт', de: 'Mein Konto', es: 'Mi cuenta', fr: 'Mon compte', tr: 'Hesabım', zh: '我的账户', ur: 'میرا اکاؤنٹ', hi: 'मेरा खाता', it: 'Il mio account', ro: 'Contul meu', pt: 'A minha conta', pl: 'Moje konto', hu: 'Fiókom', hr: 'Moj račun', sk: 'Môj účet', cs: 'Můj účet', id: 'Akun saya' };
+const ACCT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+const HEADER_CSS = '<link rel="stylesheet" href="/vs-header.css?v=1">';
+const HEADER_JS = '<script src="/vs-header.js?v=1" defer></script>';
+function withHeader(html: string, pathname: string) {
+  const re = /<a class="nav-track mtrk" href="[^"]*">[\s\S]*?<\/a>/;
+  if (!re.test(html)) return html;
+  const lang = (pathname.match(/^\/(ar|ru|de|es|fr|tr|zh|ur|hi|it|ro|pt|pl|hu|hr|sk|cs|id)(\/|$)/) || [])[1] || 'en';
+  const label = ACCT_LABEL[lang] || ACCT_LABEL.en;
+  let out = html.replace(re, `<a class="vs-acct" href="/portal" aria-label="${label}" title="${label}">${ACCT_SVG}</a>`);
+  const h = out.indexOf('</head>');
+  if (h >= 0) out = out.slice(0, h) + HEADER_CSS + out.slice(h);
+  const b = out.lastIndexOf('</body>');
+  return b < 0 ? out + HEADER_JS : out.slice(0, b) + HEADER_JS + out.slice(b);
+}
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -83,7 +101,7 @@ async function handle(req: Request) {
       return new Response(new Uint8Array(body), { status: 200, headers: { 'Content-Type': r.mime, 'Cache-Control': r.cache } });
     }
     if (r.status === 200 && req.method === 'GET') logView(pathname).catch(() => {});
-    if (r.status === 200 && !r.mime) r.body = await withChat(withApplySteps(r.body, pathname), pathname);
+    if (r.status === 200 && !r.mime) r.body = await withChat(withApplySteps(withHeader(r.body, pathname), pathname), pathname);
     return new Response(r.body, { status: r.status, headers: { 'Content-Type': r.mime || 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
   } catch (e) {
     console.error('[page]', pathname, (e as Error).message);
