@@ -102,7 +102,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ action: string 
         .filter((p) => !p.startsWith('/guides/'))
         .map((p) => {
           const h = readBuilt(p);
-          return { path: p, title: headTitle(h).split(' | ')[0] || p, hidden: !!meta[p]?.hidden, seo: !!(meta[p]?.title || meta[p]?.description), html: !!html[p], styled: !!(st.pages || {})[p]?.trim() };
+          return { path: p, title: headTitle(h).split(' | ')[0] || p, hidden: !!meta[p]?.hidden, deleted: !!meta[p]?.deleted, seo: !!(meta[p]?.title || meta[p]?.description), html: !!html[p], styled: !!(st.pages || {})[p]?.trim() };
         });
       return json(200, {
         ok: true,
@@ -143,7 +143,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ action: string 
       const [govs, posts] = await Promise.all([getVs('vs.guides'), getVs('vs.posts')]);
       const guides = listBuiltGuides().map((g) => {
         const ov = govs[g.slug];
-        return { kind: 'guide', slug: g.slug, title: ov?.title || g.title, cat: ov?.cat || g.cat, excerpt: ov?.excerpt || g.excerpt, image: ov?.image || g.image, edited: !!ov, published: ov?.published !== false, langs: ov ? trLangs(ov.tr).length : LANG_LIST.length };
+        return { kind: 'guide', slug: g.slug, title: ov?.title || g.title, cat: ov?.cat || g.cat, excerpt: ov?.excerpt || g.excerpt, image: ov?.image || g.image, edited: !!(ov && (ov.title || ov.body || ov.excerpt || ov.cat || ov.image)), deleted: !!ov?.deleted, published: ov?.published !== false, langs: ov ? trLangs(ov.tr).length : LANG_LIST.length };
       });
       const own = posts.map((p) => ({ kind: 'post', slug: p.slug, title: p.title, cat: p.cat, excerpt: p.excerpt, image: p.image, edited: false, published: p.published, date: p.date, langs: trLangs(p.tr).length, auto: !!p.autoId }));
       const cats = Array.from(new Set([...guides.map((g) => g.cat), ...own.map((p) => p.cat)].filter(Boolean))).sort();
@@ -318,11 +318,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
       const meta = await getVs('vs.pageMeta');
       const m = { ...(meta[p] || {}) };
       if (b.hidden !== undefined) m.hidden = !!b.hidden;
+      // delete = off the website in every language and out of the sitemap; restore brings it back
+      if (b.deleted === true) {
+        m.deleted = true;
+        m.hidden = true;
+      } else if (b.deleted === false) {
+        delete m.deleted;
+        m.hidden = false;
+      }
       if (b.title !== undefined) m.title = String(b.title || '').slice(0, 200);
       if (b.description !== undefined) m.description = String(b.description || '').slice(0, 400);
       if (!m.title) delete m.title;
       if (!m.description) delete m.description;
       if (!m.hidden) delete m.hidden;
+      if (!m.deleted) delete m.deleted;
       if (Object.keys(m).length) meta[p] = m;
       else delete meta[p];
       await saveVs('vs.pageMeta', meta);
@@ -410,9 +419,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
         const govs = await getVs('vs.guides');
         const g = listBuiltGuides().find((x) => x.slug === b.slug);
         if (!g) return json(404, { ok: false });
-        govs[b.slug] = { ...(govs[b.slug] || {}), published: false, updatedAt: new Date().toISOString() };
+        govs[b.slug] = { ...(govs[b.slug] || {}), published: false, deleted: true, updatedAt: new Date().toISOString() };
         await saveVs('vs.guides', govs);
-        return json(200, { ok: true, hidden: true });
+        return json(200, { ok: true, deleted: true });
       }
       const all = await getVs('vs.posts');
       const gone = all.find((x) => x.slug === b.slug);
@@ -430,6 +439,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ action: string
         if (!listBuiltGuides().some((x) => x.slug === b.slug)) return json(404, { ok: false });
         const cur = { ...(govs[b.slug] || {}) };
         cur.published = show;
+        if (show) delete cur.deleted;
         // only the switch was stored: showing again = the original guide
         const onlySwitch = !cur.title && !cur.body && !cur.excerpt && !cur.cat && !cur.image;
         if (show && onlySwitch) delete govs[b.slug];

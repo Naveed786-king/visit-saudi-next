@@ -41,49 +41,113 @@ async function memSet(locale: string, pairs: [string, string][]) {
 }
 
 /* ------------------------------------------------------------------ google */
+/** Google's free translator answers "Sorry… unusual traffic" (429) when it blocks the server's address */
+class GoogleBlocked extends Error {}
+let googleBlockedUntil = 0;
 async function googleOne(text: string, target: string, attempt = 0): Promise<string> {
+  if (Date.now() < googleBlockedUntil) throw new GoogleBlocked('blocked');
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${encodeURIComponent(target)}&dt=t`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'User-Agent': 'Mozilla/5.0' },
     body: 'q=' + encodeURIComponent(text),
   });
-  if (res.status === 429 || res.status >= 500) {
-    if (attempt < 4) {
-      await sleep(1500 * (attempt + 1));
+  const type = res.headers.get('content-type') || '';
+  if (res.status === 429 || (res.ok && !/json|javascript/i.test(type))) {
+    // blocked for this server: use the other free translator for the next 30 minutes
+    if (res.status === 429 && attempt < 1) {
+      await sleep(1500);
       return googleOne(text, target, attempt + 1);
     }
+    googleBlockedUntil = Date.now() + 30 * 60_000;
+    throw new GoogleBlocked('blocked');
+  }
+  if (res.status >= 500 && attempt < 3) {
+    await sleep(1500 * (attempt + 1));
+    return googleOne(text, target, attempt + 1);
   }
   if (!res.ok) throw new Error(`Google translate HTTP ${res.status}`);
   const data: any = await res.json();
   return (data?.[0] || []).map((p: any) => p?.[0] || '').join('');
 }
 
+/* MyMemory: a second free translator, used while Google blocks the server (pieces of up to ~450 characters) */
+const MM_LANG: Record<string, string> = { 'zh-CN': 'zh-CN', zh: 'zh-CN', iw: 'he' };
+const decodeEnt = (s: string) =>
+  s.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+function mmPieces(text: string): string[] {
+  if (text.length <= 450) return [text];
+  const out: string[] = [];
+  let cur = '';
+  for (const part of text.split(/(?<=[.!?;:])\s+/)) {
+    if ((cur + ' ' + part).trim().length > 450 && cur) {
+      out.push(cur.trim());
+      cur = '';
+    }
+    if (part.length > 450) {
+      for (let i = 0; i < part.length; i += 450) out.push(part.slice(i, i + 450));
+    } else cur += ' ' + part;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+async function myMemoryOne(text: string, target: string): Promise<string> {
+  const tl = MM_LANG[target] || target;
+  // optional: a contact address set by the site owner raises MyMemory's daily limit (never filled in automatically)
+  const email = process.env.MYMEMORY_EMAIL || '';
+  const parts: string[] = [];
+  for (const piece of mmPieces(text)) {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(piece)}&langpair=en|${encodeURIComponent(tl)}${email ? '&de=' + encodeURIComponent(email) : ''}`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const data: any = await res.json().catch(() => null);
+    const status = Number(data?.responseStatus || res.status);
+    if (!res.ok || status !== 200 || data?.quotaFinished) {
+      throw new Error(
+        status === 429 || data?.quotaFinished
+          ? 'The free translators are used up for today (Google blocks this server, MyMemory reached its daily limit). Add a free Google Gemini key in Admin → Translations, or try again tomorrow.'
+          : `The free translator did not answer (${status}). Add a free Google Gemini key in Admin → Translations, or try again later.`
+      );
+    }
+    parts.push(decodeEnt(String(data?.responseData?.translatedText || '')));
+    await sleep(80);
+  }
+  return parts.join(' ');
+}
+
 /** Translates many single-line strings with as few requests as possible */
 async function googleMany(texts: string[], target: string): Promise<string[]> {
   const out: string[] = new Array(texts.length);
+  const one = async (t: string) => {
+    if (Date.now() >= googleBlockedUntil) {
+      try {
+        return (await googleOne(t, target)).trim();
+      } catch (e) {
+        if (!(e instanceof GoogleBlocked)) throw e;
+      }
+    }
+    return (await myMemoryOne(t, target)).trim();
+  };
   let batch: number[] = [];
   let size = 0;
   const flush = async () => {
     if (!batch.length) return;
-    const joined = batch.map((i) => texts[i]).join('\n');
     let parts: string[] | null = null;
-    try {
-      const tr = await googleOne(joined, target);
-      parts = tr.split('\n');
-      if (parts.length !== batch.length) parts = null;
-    } catch {
-      parts = null;
+    if (Date.now() >= googleBlockedUntil) {
+      const joined = batch.map((i) => texts[i]).join('\n');
+      try {
+        const tr = await googleOne(joined, target);
+        parts = tr.split('\n');
+        if (parts.length !== batch.length) parts = null;
+      } catch {
+        parts = null;
+      }
     }
     if (parts) batch.forEach((i, k) => (out[i] = parts![k].trim()));
     else {
+      // one by one (Google, or MyMemory while Google blocks this server); an error is shown, never hidden
       for (const i of batch) {
-        try {
-          out[i] = (await googleOne(texts[i], target)).trim();
-        } catch {
-          out[i] = texts[i];
-        }
-        await sleep(120);
+        out[i] = await one(texts[i]);
+        await sleep(60);
       }
     }
     batch = [];

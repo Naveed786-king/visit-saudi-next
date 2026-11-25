@@ -50,7 +50,7 @@ export type VsPage = {
   tr?: Record<string, VsTr>;
 };
 /** The website's own pages: hidden (deleted from the website), or a new browser title / Google description */
-export type VsPageMeta = { hidden?: boolean; title?: string; description?: string };
+export type VsPageMeta = { hidden?: boolean; deleted?: boolean; title?: string; description?: string };
 export type VsReview = { name: string; country: string; visa: string; rating: number; text: string; date: string; visible: boolean };
 
 export const DEFAULT_PRICES: Record<string, VsPrice> = {

@@ -374,7 +374,7 @@ function Preview({ payload, url }: { payload: any; url?: string }) {
 }
 
 /* ================================================================ POSTS */
-type PostRow = { kind: 'post' | 'guide'; slug: string; title: string; cat: string; excerpt: string; image: string; edited: boolean; published: boolean; date?: string; langs: number; auto?: boolean };
+type PostRow = { kind: 'post' | 'guide'; slug: string; title: string; cat: string; excerpt: string; image: string; edited: boolean; published: boolean; deleted?: boolean; date?: string; langs: number; auto?: boolean };
 
 export function PostsAdmin() {
   const [d, setD] = useState<{ posts: PostRow[]; cats: string[] } | null>(null);
@@ -406,7 +406,8 @@ export function PostsAdmin() {
     (p) =>
       (!q || (p.title + ' ' + p.cat + ' ' + p.slug).toLowerCase().includes(q.toLowerCase())) &&
       (!cat || p.cat === cat) &&
-      (filter === 'all' || (filter === 'mine' && p.kind === 'post' && !p.auto) || (filter === 'auto' && !!p.auto) || (filter === 'guides' && p.kind === 'guide') || (filter === 'hidden' && !p.published) || (filter === 'edited' && p.edited))
+      (filter === 'deleted' ? !!p.deleted : !p.deleted) &&
+      (filter === 'all' || filter === 'deleted' || (filter === 'mine' && p.kind === 'post' && !p.auto) || (filter === 'auto' && !!p.auto) || (filter === 'guides' && p.kind === 'guide') || (filter === 'hidden' && !p.published) || (filter === 'edited' && p.edited))
   );
   async function visibility(p: PostRow, published: boolean) {
     await api(`${C}/post-visibility`, 'POST', { kind: p.kind, slug: p.slug, published });
@@ -437,6 +438,7 @@ export function PostsAdmin() {
             <option value="guides">Built-in guides</option>
             <option value="edited">Edited guides</option>
             <option value="hidden">Hidden</option>
+            <option value="deleted">Deleted ({(d?.posts || []).filter((p) => p.deleted).length})</option>
           </select>
           <select className="admin-input !w-auto" value={cat} onChange={(e) => setCat(e.target.value)}>
             <option value="">All categories</option>
@@ -478,21 +480,22 @@ export function PostsAdmin() {
                 <Btn size="sm" variant="ghost" onClick={() => visibility(p, !p.published)} title={p.published ? 'Hide from the website' : 'Show on the website'}>
                   {p.published ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </Btn>
-                {p.kind === 'post' ? (
+                {p.deleted ? (
                   <Btn
                     size="sm"
-                    variant="danger"
-                    title="Delete"
+                    variant="outline"
+                    title="Restore"
                     onClick={async () => {
-                      if (!(await confirmDialog(`Delete "${p.title}" for good (all languages)?`))) return;
-                      await api(`${C}/post-delete`, 'POST', { kind: 'post', slug: p.slug });
-                      toast('Post deleted');
+                      await api(`${C}/post-visibility`, 'POST', { kind: p.kind, slug: p.slug, published: true });
+                      toast('Restored: back on the website');
                       load();
                     }}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <RotateCcw className="h-3.5 w-3.5" /> Restore
                   </Btn>
-                ) : p.edited ? (
+                ) : (
+                  <>
+                    {p.kind === 'guide' && p.edited && (
                   <Btn
                     size="sm"
                     variant="ghost"
@@ -506,8 +509,22 @@ export function PostsAdmin() {
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                   </Btn>
-                ) : (
-                  <span className="w-[34px]" />
+                    )}
+                    <Btn
+                      size="sm"
+                      variant="danger"
+                      title="Delete"
+                      onClick={async () => {
+                        const msg = p.kind === 'post' ? `Delete "${p.title}" for good (all languages)?` : `Delete the guide "${p.title}"? It leaves the website and the sitemap in all languages. You can restore it from "Deleted".`;
+                        if (!(await confirmDialog(msg))) return;
+                        await api(`${C}/post-delete`, 'POST', { kind: p.kind, slug: p.slug });
+                        toast(p.kind === 'post' ? 'Post deleted' : 'Guide deleted (can be restored)');
+                        load();
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Btn>
+                  </>
                 )}
               </div>
             ))}
@@ -698,13 +715,13 @@ function PostEditor({ kind, slug, cats, engine, onClose }: { kind: 'post' | 'gui
 }
 
 /* ================================================================ PAGES */
-type BuiltRow = { path: string; title: string; hidden: boolean; seo: boolean; html: boolean; styled: boolean };
+type BuiltRow = { path: string; title: string; hidden: boolean; deleted?: boolean; seo: boolean; html: boolean; styled: boolean };
 type CustomRow = { slug: string; path: string; title: string; mode: 'simple' | 'html'; published: boolean; langs: number };
 
 export function PagesAdmin() {
   const [d, setD] = useState<{ built: BuiltRow[]; custom: CustomRow[] } | null>(null);
   const [q, setQ] = useState('');
-  const [tab, setTab] = useState<'built' | 'custom'>('built');
+  const [tab, setTab] = useState<'built' | 'custom' | 'deleted'>('built');
   const [open, setOpen] = useState<string | null>(null);
   const [create, setCreate] = useState(false);
   const { engine, reload } = useEngine();
@@ -726,7 +743,13 @@ export function PagesAdmin() {
     );
   }
   const ql = q.toLowerCase();
-  const built = (d?.built || []).filter((p) => !q || (p.path + ' ' + p.title).toLowerCase().includes(ql));
+  const built = (d?.built || []).filter((p) => (tab === 'deleted' ? p.deleted : !p.deleted) && (!q || (p.path + ' ' + p.title).toLowerCase().includes(ql)));
+  async function setDeleted(p: BuiltRow, deleted: boolean) {
+    if (deleted && !(await confirmDialog(`Delete the page ${p.path}? It leaves the website (all 19 languages) and the sitemap. You can restore it from "Deleted".`))) return;
+    await api(`${C}/page-meta`, 'POST', { path: p.path, deleted });
+    toast(deleted ? 'Page deleted (can be restored)' : 'Page restored: back on the website');
+    load();
+  }
   const custom = (d?.custom || []).filter((p) => !q || (p.path + ' ' + p.title).toLowerCase().includes(ql));
   return (
     <div>
@@ -741,9 +764,9 @@ export function PagesAdmin() {
       />
       <Card>
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
-          {(['built', 'custom'] as const).map((t) => (
+          {(['built', 'custom', 'deleted'] as const).map((t) => (
             <button key={t} type="button" onClick={() => setTab(t)} className={cn('rounded-xl px-4 py-2 text-sm font-bold', tab === t ? 'bg-ink text-white' : 'bg-white ring-1 ring-gray-200')}>
-              {t === 'built' ? `Website pages (${d?.built.length ?? '…'})` : `New pages (${d?.custom.length ?? '…'})`}
+              {t === 'built' ? `Website pages (${d ? d.built.filter((p) => !p.deleted).length : '…'})` : t === 'custom' ? `New pages (${d?.custom.length ?? '…'})` : `Deleted (${d ? d.built.filter((p) => p.deleted).length : '…'})`}
             </button>
           ))}
           <div className="relative min-w-[220px] flex-1">
@@ -753,7 +776,10 @@ export function PagesAdmin() {
         </div>
         {!d ? (
           <Spinner />
-        ) : tab === 'built' ? (
+        ) : tab !== 'custom' ? (
+          !built.length ? (
+            <Empty text={tab === 'deleted' ? 'No deleted pages' : 'No pages found'} />
+          ) : (
           <div className="max-h-[70vh] divide-y divide-gray-100 overflow-auto">
             {built.map((p) => (
               <div key={p.path} className="flex items-center gap-3 px-4 py-2.5">
@@ -761,19 +787,33 @@ export function PagesAdmin() {
                   <p className="truncate text-sm font-semibold">{p.title}</p>
                   <p className="truncate font-mono text-[11px] text-gray-400">{p.path}</p>
                 </div>
-                {p.hidden && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-600">hidden</span>}
+                {p.hidden && !p.deleted && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-600">hidden</span>}
                 {p.seo && <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">title changed</span>}
                 {p.html && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">HTML changed</span>}
                 {p.styled && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-800">styled</span>}
                 <a href={p.path} target="_blank" rel="noopener noreferrer" className="p-1 text-gray-400 hover:text-gray-700">
                   <ExternalLink className="h-4 w-4" />
                 </a>
-                <Btn size="sm" variant="outline" onClick={() => setOpen(p.path)}>
-                  Edit
-                </Btn>
+                {p.deleted ? (
+                  <Btn size="sm" variant="outline" onClick={() => setDeleted(p, false)}>
+                    <RotateCcw className="h-3.5 w-3.5" /> Restore
+                  </Btn>
+                ) : (
+                  <>
+                    <Btn size="sm" variant="outline" onClick={() => setOpen(p.path)}>
+                      Edit
+                    </Btn>
+                    {p.path !== '/' && (
+                      <Btn size="sm" variant="danger" title="Delete" onClick={() => setDeleted(p, true)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Btn>
+                    )}
+                  </>
+                )}
               </div>
             ))}
           </div>
+          )
         ) : !custom.length ? (
           <Empty
             text="No new pages yet"

@@ -22,6 +22,8 @@ export type GuideOverride = {
   image?: string;
   body?: string;
   published?: boolean;
+  /** deleted in the admin: off the website and the sitemap, listed under Deleted (can be restored) */
+  deleted?: boolean;
   updatedAt?: string;
   /** translations of the changed guide (language -> fields) */
   tr?: Record<string, { title?: string; cat?: string; excerpt?: string; body?: string; manual?: boolean; at?: string }>;
