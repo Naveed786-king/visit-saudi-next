@@ -104,6 +104,8 @@ jobs:
         run: bash scripts/ci/content-tests.sh
       - name: AI assistant and Auto Publisher posts (fake AI)
         run: bash scripts/ci/ai-tests.sh
+      - name: Visual page editor
+        run: node scripts/ci/visual-test.mjs http://localhost:3000
       - name: Pages still identical after the admin tests
         run: sleep 6 && node scripts/ci/compare-pages.mjs http://localhost:3000 http://localhost:8324
       - name: Server log

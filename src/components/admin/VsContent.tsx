@@ -1260,7 +1260,7 @@ function HtmlPageEditor({ page, engine, onClose }: { page: any; engine: { provid
 }
 
 function BuiltPageEditor({ d, engine, onClose, reload }: { d: any; engine: { provider: string; problem: string } | null; onClose: () => void; reload: () => void }) {
-  const [tab, setTab] = useState<'sections' | 'texts' | 'pictures' | 'settings' | 'html' | 'preview'>('sections');
+  const [tab, setTab] = useState<'visual' | 'sections' | 'texts' | 'pictures' | 'settings' | 'html' | 'preview'>('visual');
   const [allPages, setAllPages] = useState<{ path: string; title: string }[]>([]);
   useEffect(() => {
     api(`${C}/pages`).then((r) => setAllPages([...r.built.map((x: any) => ({ path: x.path, title: x.title })), ...r.custom.filter((x: any) => x.mode === 'html').map((x: any) => ({ path: x.path, title: x.title }))])).catch(() => {});
@@ -1351,6 +1351,7 @@ function BuiltPageEditor({ d, engine, onClose, reload }: { d: any; engine: { pro
       <div className="mb-4 flex flex-wrap gap-2">
         {(
           [
+            ['visual', '✦ Visual editor'],
             ['sections', 'Sections'],
             ['texts', `Texts (${texts.length})`],
             ['pictures', 'Pictures'],
@@ -1449,10 +1450,68 @@ function BuiltPageEditor({ d, engine, onClose, reload }: { d: any; engine: { pro
         </div>
       )}
       {tab === 'preview' && <LivePreview path={path} />}
+      {tab === 'visual' && <VisualEditor path={path} />}
       {tab === 'sections' && <SectionsPanel path={path} pages={allPages} onChanged={reload} />}
       {tab === 'pictures' && <PicturesPanel path={path} onChanged={reload} />}
       <AllLanguagesModal src={allOf} engine={engine} onClose={() => setAllOf(null)} onSaved={reload} />
     </div>
+  );
+}
+
+/** Admin → Pages → Visual editor: the page itself; click any part to change its text, picture, colours and sizes */
+function VisualEditor({ path }: { path: string }) {
+  const [lang, setLang] = useState('');
+  const [k, setK] = useState(0);
+  const [count, setCount] = useState<number | null>(null);
+  const url = (lang ? '/' + lang : '') + (path === '/' && lang ? '/' : path);
+  const load = useCallback(() => api(`/api/admin/visual?path=${encodeURIComponent(path)}`).then((d) => setCount(d.count)).catch(() => setCount(null)), [path]);
+  useEffect(() => {
+    load();
+  }, [load, k]);
+  return (
+    <Card
+      title={
+        <span className="flex items-center gap-2">
+          <Wand2 className="h-4 w-4" /> Click anything on the page to change it
+        </span>
+      }
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <select className="admin-input !w-auto !py-1.5 text-xs" value={lang} onChange={(e) => setLang(e.target.value)} title="Language of the page">
+            {Object.keys(LANG_NAMES).map((l) => (
+              <option key={l} value={l === 'en' ? '' : l}>
+                {LANG_NAMES[l]}
+              </option>
+            ))}
+          </select>
+          <button type="button" className="text-xs font-bold text-gray-500 underline" onClick={() => setK((x) => x + 1)}>
+            Reload
+          </button>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-gray-500 underline">
+            Open page
+          </a>
+          {!!count && (
+            <Btn
+              size="sm"
+              variant="danger"
+              onClick={async () => {
+                if (!(await confirmDialog(`Undo all ${count} visual change(s) on ${path}? The page goes back to the original in every language.`))) return;
+                await api(`/api/admin/visual?path=${encodeURIComponent(path)}`, 'DELETE');
+                toast('Back to the original page');
+                setK((x) => x + 1);
+              }}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Undo all ({count})
+            </Btn>
+          )}
+        </div>
+      }
+    >
+      <p className="border-b border-gray-100 px-4 py-2 text-xs text-gray-500">
+        Text, pictures, links, colours, text size, spacing, rounded corners, width, background picture, hide. In English a changed text is translated into all languages automatically; on another language&apos;s page a text is changed only there. Pictures, colours and sizes change in every language.
+      </p>
+      <iframe key={url + k} src={url + '?vs-edit=1'} title="Visual editor" className="h-[80vh] w-full rounded-b-2xl bg-white" />
+    </Card>
   );
 }
 

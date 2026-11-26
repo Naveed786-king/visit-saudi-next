@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import type { Edits, GuideOverride, Styling } from './render';
 import type { Chrome } from './builder';
+import type { PageVisual } from './visual-core';
 
 export type VsPrice = { amount: number; currency: string };
 export type VsSite = {
@@ -95,6 +96,8 @@ type Stores = {
   'vs.html': Record<string, string>;
   /** header + menu, footer (all pages) and site-wide replacements */
   'vs.chrome': Chrome;
+  /** Admin → Pages → Visual editor: changed texts, pictures, colours and sizes (page path -> place -> change) */
+  'vs.visual': Record<string, PageVisual>;
 };
 const DEFAULTS: Stores = {
   'vs.site': DEFAULT_VS_SITE,
@@ -109,6 +112,7 @@ const DEFAULTS: Stores = {
   'vs.pageMeta': {},
   'vs.html': {},
   'vs.chrome': {},
+  'vs.visual': {},
 };
 
 const cache = new Map<string, { at: number; v: unknown }>();

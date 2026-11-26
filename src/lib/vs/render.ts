@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { htmlToRich, richToHtml } from './rich';
 import { applyChrome, applyRules } from './builder';
+import { applyVisual, type PageVisual } from './visual-core';
 import { buildHtmlPage, buildPost, buildSimplePage, emptyExtra, injectPostCards, setHead, sitemapXml, type SiteExtra } from './pages';
 
 export const SITE_ROOT = path.join(process.cwd(), 'site', 'public');
@@ -222,6 +223,8 @@ export type RenderSources = {
   styling: () => Promise<Styling | null>;
   /** pages and posts added or changed in the admin */
   extra?: () => Promise<SiteExtra>;
+  /** changes made in the visual editor (texts, pictures, colours, sizes) */
+  visual?: () => Promise<Record<string, PageVisual>>;
 };
 
 /** Resolves a request path exactly like the old server.js (language prefix, /blog → /guides, .html → clean URL, 404) */
@@ -312,5 +315,9 @@ export async function renderPage(pathname: string, search: string, src: RenderSo
   else page = applyEditsEn(page, await src.edits('en'));
   page = applyStyling(page, p, styling);
   if (changed && ex.chrome?.rules?.length) page = applyRules(page, ex.chrome.rules);
+  if (src.visual) {
+    const v = (await src.visual())[p];
+    if (v) page = applyVisual(page, v, reqLang || 'en');
+  }
   return { kind: 'html', status: 200, body: page };
 }

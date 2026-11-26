@@ -1,7 +1,11 @@
 // Every website page and file of visit-saudi.ae (all languages): served exactly as before from site/public.
 import fs from 'fs';
 import path from 'path';
-import { renderPage, NOT_FOUND_HTML, I18N_DIR, MIME } from '@/lib/vs/render';
+import { renderPage, NOT_FOUND_HTML, I18N_DIR, MIME, LANG_LIST } from '@/lib/vs/render';
+import { siteSources } from '@/lib/vs/sources';
+import { markPlaces } from '@/lib/vs/visual-core';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE, verifySession } from '@/lib/jwt';
 import { readStored } from '@/lib/upload';
 import { editsFor, getVs, stylingCss } from '@/lib/vs/store';
 import { logView } from '@/lib/vs/apps';
@@ -55,11 +59,7 @@ function withHeader(html: string, pathname: string) {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-async function extra() {
-  const [pages, posts, meta, html, chrome] = await Promise.all([getVs('vs.pages'), getVs('vs.posts'), getVs('vs.pageMeta'), getVs('vs.html'), getVs('vs.chrome')]);
-  return { pages, posts, meta, html, chrome };
-}
-const sources = { edits: editsFor, guides: () => getVs('vs.guides'), styling: stylingCss, extra };
+const sources = siteSources;
 
 async function handle(req: Request) {
   const url = new URL(req.url);
@@ -102,6 +102,17 @@ async function handle(req: Request) {
     }
     if (r.status === 200 && req.method === 'GET') logView(pathname).catch(() => {});
     if (r.status === 200 && !r.mime) r.body = await withChat(withApplySteps(withHeader(r.body, pathname), pathname), pathname);
+    // Admin → Pages → Visual editor: the page with the place of every element and the editor's script (team only)
+    if (r.status === 200 && !r.mime && url.searchParams.get('vs-edit') === '1') {
+      const s = await verifySession((await cookies()).get(SESSION_COOKIE)?.value).catch(() => null);
+      if (s && (s.role === 'ADMIN' || s.role === 'EDITOR')) {
+        let body = markPlaces(r.body);
+        const tag = `<script src="/vs-edit.js?v=5" data-langs="${LANG_LIST.join(',')}" defer></script>`;
+        const i = body.lastIndexOf('</body>');
+        body = i < 0 ? body + tag : body.slice(0, i) + tag + body.slice(i);
+        return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' } });
+      }
+    }
     return new Response(r.body, { status: r.status, headers: { 'Content-Type': r.mime || 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' } });
   } catch (e) {
     console.error('[page]', pathname, (e as Error).message);
