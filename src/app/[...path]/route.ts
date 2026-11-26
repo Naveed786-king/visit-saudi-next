@@ -107,6 +107,14 @@ async function handle(req: Request) {
       const s = await verifySession((await cookies()).get(SESSION_COOKIE)?.value).catch(() => null);
       if (s && (s.role === 'ADMIN' || s.role === 'EDITOR')) {
         let body = markPlaces(r.body);
+        // the site's script sends a page to the visitor's last language: in the editor the page stays in its own language
+        const pl = (pathname.match(/^\/([a-z]{2})(\/|$)/) || [])[1] || 'en';
+        const keep = `<script>try{localStorage.setItem("vsa_lang","${LANG_LIST.includes(pl) ? pl : 'en'}")}catch(e){}</script>`;
+        const hd = body.search(/<head[^>]*>/i);
+        if (hd >= 0) {
+          const he = body.indexOf('>', hd) + 1;
+          body = body.slice(0, he) + keep + body.slice(he);
+        }
         const tag = `<script src="/vs-edit.js?v=5" data-langs="${LANG_LIST.join(',')}" defer></script>`;
         const i = body.lastIndexOf('</body>');
         body = i < 0 ? body + tag : body.slice(0, i) + tag + body.slice(i);

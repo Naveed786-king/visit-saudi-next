@@ -35,6 +35,7 @@ expect('edit mode needs a team login', !r.text.includes('data-vsp=') && !r.text.
 await call('POST', '/api/auth/login', { email: 'admin@example.com', password: 'CiPassword123', admin: true });
 r = await call('GET', '/?vs-edit=1');
 expect('edit mode marks every element and loads the editor', r.text.includes('data-vsp="') && r.text.includes('/vs-edit.js'));
+expect('edit mode keeps the page in its own language', r.text.includes('localStorage.setItem("vsa_lang","en")'));
 const tagKey = (html, re) => (re.exec(html) || [])[1];
 const h1 = tagKey(r.text, /<h1\b[^>]*data-vsp="([\d.]+)"/);
 const img = tagKey(r.text, /<img\b[^>]*data-vsp="([\d.]+)"/);
