@@ -3,6 +3,7 @@ import { requireStaff } from '@/lib/auth';
 import { getSetting } from '@/lib/settings';
 import { makePdf } from '@/lib/portal/pdf';
 import { emailHtml, fillTpl } from '@/lib/portal/notify';
+import { emailPage } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,15 +13,16 @@ export async function GET(req: Request) {
   const kind = new URL(req.url).searchParams.get('kind') || 'quote';
   if (kind === 'email') {
     const cfg = await getSetting('clientMail');
-    const v = { name: 'Sara', ref: 'GV-0001', service: 'UAE Golden Visa', total: 'AED 12,500.00', link: '#' };
+    const v = { name: 'Sara', ref: 'VSA-1A2B3C', service: 'Saudi Tourist eVisa', total: 'AED 650.00', link: '#' };
+    const site = await getSetting('site');
     const html = emailHtml(fillTpl(cfg.events.quote.body, v), cfg.signOff, 'View my quotation');
-    return new Response(`<p style="font:13px system-ui;color:#666;margin:12px">Subject: <b>${fillTpl(cfg.events.quote.subject, v)}</b></p>${html}`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    return new Response(`<p style="font:13px system-ui;color:#666;margin:12px">Subject: <b>${fillTpl(cfg.events.quote.subject, v)}</b></p>${emailPage(html, site.name || 'Visit Saudi')}`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   const quote = kind !== 'receipt';
   const pdf = await makePdf(
     quote
-      ? { kind: 'quote', name: 'Sara Ahmed', ref: 'GV-0001', desc: 'UAE Golden Visa (10 years) · 1 person, inside the UAE', lines: [['Main applicant: Golden Visa issuance, Emirates ID, medical', 'AED 9,978.00'], ['Our service fee', 'AED 2,500.00'], ['VAT 5% on the service fee', 'AED 125.00']], totalLabel: 'Quote total', total: 'AED 12,603.00' }
-      : { kind: 'receipt', name: 'Sara Ahmed', ref: 'GV-0001', facts: [['Receipt no.', 'GV-0001-R1'], ['Paid on', new Date().toLocaleDateString('en-GB')], ['Method', 'Card']], lines: [['UAE Golden Visa · full payment', 'AED 12,603.00']], totalLabel: 'Amount paid', total: 'AED 12,603.00' },
+      ? { kind: 'quote', name: 'Sara Ahmed', ref: 'VSA-1A2B3C', facts: [['Service', 'Saudi Tourist eVisa']], lines: [['Saudi Tourist eVisa: visa fee', 'AED 480.00'], ['Saudi Tourist eVisa: service fee', 'AED 170.00']], totalLabel: 'Total', total: 'AED 650.00' }
+      : { kind: 'receipt', name: 'Sara Ahmed', ref: 'VSA-1A2B3C', facts: [['Receipt no.', 'VSA-1A2B3C-R1'], ['Paid on', new Date().toLocaleDateString('en-GB')], ['Payment method', 'Card']], desc: 'Saudi Tourist eVisa', lines: [['Visa fee', 'AED 650.00'], ['Card fee (UAE card)', 'AED 18.85']], totalLabel: 'Amount received', total: 'AED 668.85' },
   );
   return new Response(Buffer.from(pdf), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="sample-${quote ? 'quote' : 'receipt'}.pdf"` } });
 }

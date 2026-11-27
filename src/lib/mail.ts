@@ -105,6 +105,9 @@ function wrap(body: string, brand: string) {
   </table></td></tr></table></body></html>`;
 }
 
+/** A whole email as it is sent (header with the emblem, body, footer), e.g. for the admin preview */
+export const emailPage = (body: string, brand: string) => wrap(body, brand);
+
 export function escapeHtml(s: string) {
   return (s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 }

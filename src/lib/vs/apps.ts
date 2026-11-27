@@ -100,7 +100,8 @@ async function customerFor(name: string, email: string, phone: string, nat: stri
   const em = email.toLowerCase();
   const u = await prisma.user.findUnique({ where: { email: em } });
   if (u) {
-    if (isStaff(u.role)) return { error: 'staff_email' as const };
+    // a team member applying with their own email (e.g. a test): the file is saved on that account, nobody is signed in
+    if (isStaff(u.role)) return { user: u, signIn: false, account: 'existing' as const };
     const signIn = !!password && u.active && (await checkPassword(password, u.passwordHash));
     return { user: u, signIn, account: signIn ? ('signed-in' as const) : ('existing' as const) };
   }
